@@ -58,7 +58,7 @@ def validate_file(paths, file, cmd):
 
     source_file = paths['compilation'] / file.replace('py', 'exe')
 
-    state = check_output(f"python {file}") in check_output(source_file)
+    state = check_output(f"python {file}", stderr=subprocess.STDOUT) in check_output(source_file, stderr=subprocess.STDOUT)
 
     if state:
         destination_file = paths['compilation'] / file.replace('py', 'exe')
