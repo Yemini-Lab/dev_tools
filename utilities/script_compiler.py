@@ -18,11 +18,12 @@ def list_python_files(path):
     python_files = [file for file in files if file.endswith('.py')]
     return python_files
 
-# Define directories using Path
-npal_directory = Path('C:/Users/YeminiPC/Documents/GitHub/NeuroPAL_ID')
+# Define directories
+os_platform = platform.system().lower()
+npal_directory = Path('/Users/yemini-lab/Documents/GitHub')
 script_directory = npal_directory / '+Wrapper'
 distribution_directory = script_directory / 'dist'
-compile_directory = npal_directory / 'win_visualize' / 'for_redistribution_files_only' / 'lib' / 'bin' / platform.system().lower()
+compile_directory = npal_directory / f"{os_platform[:3]}_visualize" / 'for_redistribution_files_only' / 'lib' / 'bin' / os_platform
 
 # List Python files in the directory
 python_files = list_python_files(script_directory)
