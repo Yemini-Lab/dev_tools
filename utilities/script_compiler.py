@@ -19,12 +19,12 @@ def list_python_files(path):
     return python_files
 
 # Define directories
-os_platform = platform.system().lower()
+os_platform = platform.system().lower().replace('darwin', 'macos')
 
-if os_platform == 'macos':
-    npal_directory = Path('/Users/yemini-lab/Documents/GitHub/NeuroPAL_ID')
-else:
+if os_platform == 'windows':
     npal_directory = Path('C:\\Users\\YeminiPC\\Documents\\GitHub\\NeuroPAL_ID')
+else:
+    npal_directory = Path('/Users/yemini-lab/Documents/GitHub/NeuroPAL_ID')
 
 script_directory = npal_directory / '+Wrapper'
 distribution_directory = Path('.') / 'dist'
