@@ -36,17 +36,16 @@ python_files = list_python_files(script_directory)
 # Process each Python file
 for file in python_files:
     file_path = script_directory / file
-    cmd = f"pyinstaller {file_path}"
-
     # Add hidden imports to the command
     hidden_imports_string = ' '.join(f"--hidden-import={import_name}" for import_name in hidden_imports)
-    paths_string = ''.join(f"--paths={script_directory / local_file}" for local_file in python_files)
-    cmd += f" {hidden_imports_string} --onefile"
+    paths_string = ' '.join(f"--paths={script_directory / local_file}" for local_file in python_files)
+    cmd = f"pyinstaller {paths_string} {file_path} {hidden_imports_string} --onefile"
 
     if os_platform == 'macos':
         subprocess.call('alias pip=pip3', shell=True)
 
     # Execute the command
+    print(cmd)
     subprocess.call(cmd, shell=True)
 
     # Define source and destination paths for moving files
