@@ -58,7 +58,7 @@ def validate_file(paths, file, cmd):
         print(f"Successfully compiled {destination_file}.\n")
     elif (state != 1) and ('--onefile' in cmd):
         print(f"Failed to compile {file}. Attempting to salvage with expanded packaging...\n")
-        cmd = cmd.replace(' --onefile', '')
+        cmd = cmd.replace('--onefile', '--noconfirm')
         subprocess.call(cmd, shell=True)
         validate_file(paths, file, cmd)
     else:
