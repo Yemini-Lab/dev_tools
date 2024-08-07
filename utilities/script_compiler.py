@@ -37,15 +37,15 @@ for file in python_files:
     cmd = f"pyinstaller {file_path}"
 
     # Add hidden imports to the command
-    hidden_imports_string = ' '.join(f"--hidden-import={import_name}" for import_name in hidden_imports)
+    hidden_imports_string = ' '.join(f"--hidden-import={import_name.replace('.py', '')}" for import_name in hidden_imports)
     cmd += f" {hidden_imports_string} --onefile"
 
     # Execute the command
     subprocess.call(cmd, shell=True)
 
     # Define source and destination paths for moving files
-    source_file = distribution_directory / file.replace('.py', '.exe')
-    destination_file = compile_directory / file.replace('.py', '.exe')
+    source_file = distribution_directory / file.replace('py', 'exe')
+    destination_file = compile_directory / file.replace('py', 'exe')
 
     # Move files from source to destination
     try:
