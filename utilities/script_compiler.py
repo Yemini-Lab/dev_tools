@@ -40,6 +40,9 @@ for file in python_files:
     hidden_imports_string = ' '.join(f"--hidden-import={import_name.replace('.py', '')}" for import_name in hidden_imports)
     cmd += f" {hidden_imports_string} --onefile"
 
+    if os_platform == 'macos':
+        subprocess.call('alias pip=pip3', shell=True)
+
     # Execute the command
     subprocess.call(cmd, shell=True)
 
