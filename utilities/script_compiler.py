@@ -82,7 +82,7 @@ hidden_paths = [dirs['script']]
 data_files = []
 
 # List Python files in the directory
-python_files = list_python_files(script_directory)
+python_files = list_python_files(dirs['script'])
 
 # Populate contingency lists
 schema_libraries = [pynwb, h5py, hdmf]
