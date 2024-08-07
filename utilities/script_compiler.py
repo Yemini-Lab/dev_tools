@@ -73,8 +73,8 @@ paths_string = ' '.join(f"--paths={script_directory / local_file}" for local_fil
 data_string = ' '.join(f"--add-data={data_file}" for data_file in data_files)
 
 # Clear pyinstaller cache
-for dir in [os. getcwd(), script_directory]:
-    clear_cache(dir)
+for thisDir in [os. getcwd(), script_directory]:
+    clear_cache(thisDir)
 
 # Process each Python file
 for file in python_files:
