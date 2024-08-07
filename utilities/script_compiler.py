@@ -26,7 +26,7 @@ def clear_cache(path):
 
 def list_data_files(path):
     """Lists all data files paths for given library path."""
-    files = listdir(path)
+    files = os.listdir(path)
     data_files = [os.path.join(path, file) for file in files if not file.endswith(['.py', 'pyc', 'pyd'])]
     return data_files
 
