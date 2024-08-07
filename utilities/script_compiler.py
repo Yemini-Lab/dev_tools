@@ -8,37 +8,6 @@ import subprocess
 from subprocess import check_output
 from pathlib import Path
 
-
-def clear_cache(path):
-    """Deletes all pyinstaller-related cache files."""
-    for root, dirs, files in os.walk(path, topdown=False):
-        for file in files:
-            if file.endswith('.spec') or file.endswith('.exe'):
-                file_path = os.path.join(root, file)
-
-                try:
-                    if platform.system().lower() == 'darwin':
-                        os.chmod(file_path, 0o777)
-                        
-                    os.remove(file_path)
-                    print(f"Deleted cache file: {file_path}")
-                except:
-                    print(f"Failed to delete cache file: {file_path}")
-
-        for dir_name in dirs:
-            if dir_name in ('build', 'dist', '__pycache__'):
-                dir_path = os.path.join(root, dir_name)
-
-                try:
-                    if platform.system().lower() == 'darwin':
-                        os.chmod(dir_path, 0o777)
-
-                    shutil.rmtree(dir_path)
-                    print(f"Deleted cache directory: {dir_path}")
-                except:
-                    print(f"Failed to delete cache directory: {dir_path}")
-
-
 def list_data_files(path):
     """Lists all data files paths for given library path."""
     files = os.listdir(path)
@@ -56,13 +25,14 @@ def list_python_files(path):
 def validate_file(paths, file, cmd):
     """Check whether the compiled file executes the same as the python original."""
 
-    source_file = paths['compilation'] / file.replace('py', 'exe')
+    script_file = paths['compilation'] / file
+    executable_file = script_file.replace('py', 'exe')
 
-    state = check_output(f"python {file}", stderr=subprocess.STDOUT) in check_output(source_file, stderr=subprocess.STDOUT)
+    state = check_output(f"python {script_file}", stderr=subprocess.STDOUT) in check_output(executable_file, stderr=subprocess.STDOUT)
 
     if state:
         destination_file = paths['compilation'] / file.replace('py', 'exe')
-        shutil.move(str(source_file), str(destination_file))
+        shutil.move(str(executable_file), str(destination_file))
         print(f"Successfully compiled {destination_file}.\n\n")
     elif state != 1 and '--onefile' in cmd:
         print(f"Failed to compile {file}. Attempting to salvage with expanded packaging...\n\n")
@@ -71,6 +41,35 @@ def validate_file(paths, file, cmd):
         validate_file(paths, file, cmd)
     else:
         raise ValueError('ERROR: COULD NOT SALVAGE FILE.')
+
+def clear_cache(path):
+    """Deletes all pyinstaller-related cache files."""
+    for root, dirs, files in os.walk(path, topdown=False):
+        for file in files:
+            if file.endswith('.spec') or file.endswith('.exe'):
+                file_path = os.path.join(root, file)
+
+                try:
+                    if platform.system().lower() == 'darwin':
+                        os.chmod(file_path, 0o777)
+
+                    os.remove(file_path)
+                    print(f"Deleted cache file: {file_path}")
+                except:
+                    print(f"Failed to delete cache file: {file_path}")
+
+        for dir_name in dirs:
+            if dir_name in ('build', 'dist', '__pycache__'):
+                dir_path = os.path.join(root, dir_name)
+
+                try:
+                    if platform.system().lower() == 'darwin':
+                        os.chmod(dir_path, 0o777)
+
+                    shutil.rmtree(dir_path)
+                    print(f"Deleted cache directory: {dir_path}")
+                except:
+                    print(f"Failed to delete cache directory: {dir_path}")
 
 
 # Define directories
