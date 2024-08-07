@@ -33,9 +33,6 @@ compile_directory = npal_directory / f"{os_platform[:3]}_visualize" / 'for_redis
 # List Python files in the directory
 python_files = list_python_files(script_directory)
 
-# Add Python files to hidden imports
-hidden_imports.extend(python_files)
-
 # Process each Python file
 for file in python_files:
     file_path = script_directory / file
