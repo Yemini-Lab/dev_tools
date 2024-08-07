@@ -12,7 +12,7 @@ def clear_cache(path):
     """Deletes all pyinstaller-related cache files."""
     for root, dirs, files in os.walk(path, topdown=False):
         for file in files:
-            if file.endswith('.spec') or file.endwith('.exe'):
+            if file.endswith('.spec') or file.endswith('.exe'):
                 file_path = os.path.join(root, file)
                 os.remove(file_path)
                 print(f"Deleted file: {file_path}")
@@ -27,7 +27,7 @@ def clear_cache(path):
 def list_data_files(path):
     """Lists all data files paths for given library path."""
     files = os.listdir(path)
-    data_files = [os.path.join(path, file) for file in files if not file.endswith(['.py', 'pyc', 'pyd'])]
+    data_files = [os.path.join(path, file) for file in files if not file.endswith(('.py', '.pyc', '.pyd'))]
     return data_files
 
 
@@ -71,7 +71,7 @@ for eachLib in schema_libraries:
 # Formulate arguments
 hidden_imports_string = ' '.join(f"--hidden-import={import_name}" for import_name in hidden_imports)
 paths_string = ' '.join(f"--paths={script_directory / local_file}" for local_file in python_files)
-data_string = ' '.join(f"--add-data={data_file}" for data_file in data_files)
+data_string = ' '.join(f"--add-data={data_file}:." for data_file in data_files)
 
 # Clear pyinstaller cache
 for thisDir in [os. getcwd(), script_directory, compile_directory]:
