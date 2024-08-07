@@ -12,7 +12,7 @@ def clear_cache(path):
     """Deletes all pyinstaller-related cache files."""
     for root, dirs, files in os.walk(path, topdown=False):
         for file in files:
-            if file.endswith('.spec'):
+            if file.endswith('.spec') or file.endwith('.exe'):
                 file_path = os.path.join(root, file)
                 os.remove(file_path)
                 print(f"Deleted file: {file_path}")
@@ -74,7 +74,7 @@ paths_string = ' '.join(f"--paths={script_directory / local_file}" for local_fil
 data_string = ' '.join(f"--add-data={data_file}" for data_file in data_files)
 
 # Clear pyinstaller cache
-for thisDir in [os. getcwd(), script_directory]:
+for thisDir in [os. getcwd(), script_directory, compile_directory]:
     clear_cache(thisDir)
 
 # Process each Python file
