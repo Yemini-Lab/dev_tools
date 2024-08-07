@@ -4,13 +4,22 @@ import subprocess
 from pathlib import Path
 import shutil
 
+import pynwb
+import h5py
+
 # List of hidden imports
 hidden_imports = [
     'xml.etree',
     'xml.etree.ElementTree',
     'scikit-image',
-    'mx.DateTime'
+    'mx.DateTime',
+    'h5py.defs',
+    'h5py.utils',
+    'h5py.h5ac',
+    'h5py._proxy'
 ]
+
+hidden_paths = []
 
 def list_python_files(path):
     """List all Python files in the given directory."""
@@ -32,6 +41,9 @@ compile_directory = npal_directory / f"{os_platform[:3]}_visualize" / 'for_redis
 
 # List Python files in the directory
 python_files = list_python_files(script_directory)
+
+# Populate hidden paths
+hidden_paths.extend([str(script_directory), str(Path(pynwb.__file__).parent), str(Path(h5py.__file__).parent)])
 
 # Process each Python file
 for file in python_files:
