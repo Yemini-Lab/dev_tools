@@ -22,7 +22,7 @@ def list_python_files(path):
 os_platform = platform.system().lower()
 npal_directory = Path('/Users/yemini-lab/Documents/GitHub/NeuroPAL_ID')
 script_directory = npal_directory / '+Wrapper'
-distribution_directory = script_directory / 'dist'
+distribution_directory = Path('.') / 'dist'
 compile_directory = npal_directory / f"{os_platform[:3]}_visualize" / 'for_redistribution_files_only' / 'lib' / 'bin' / os_platform
 
 # List Python files in the directory
