@@ -5,6 +5,7 @@ import pynwb
 import shutil
 import platform
 import subprocess
+from subprocess import check_output
 from pathlib import Path
 
 
@@ -38,6 +39,26 @@ def list_python_files(path):
     return python_files
 
 
+def validate_file(paths, file, cmd):
+    """Check whether the compiled file executes the same as the python original."""
+
+    source_file = paths['compilation'] / file.replace('py', 'exe')
+
+    state = check_output(f"python {file}") in check_output(source_file)
+
+    if state:
+        destination_file = paths['compilation'] / file.replace('py', 'exe')
+        shutil.move(str(source_file), str(destination_file))
+        print(f"Successfully compiled {destination_file}.\n")
+    elif state != 1 and '--onefile' in cmd:
+        print(f"Failed to compile {file}. Attempting to salvage with expanded packaging...")
+        cmd = cmd.replace(' --onefile', '')
+        subprocess.call(cmd, shell=True)
+        validate_file(paths, file, cmd)
+    else:
+        raise ValueError('ERROR: COULD NOT SALVAGE FILE.')
+
+
 # Define directories
 os_platform = platform.system().lower().replace('darwin', 'macos')
 
@@ -47,14 +68,17 @@ if os_platform == 'windows':
 else:
     npal_directory = Path(f"/Users/{os.environ.get('USER', os.environ.get('USERNAME'))}/Documents/GitHub/NeuroPAL_ID")
 
-script_directory = npal_directory / '+Wrapper'
-distribution_directory = Path('.') / 'dist'
-compile_directory = npal_directory / f"{os_platform[:3]}_visualize" / 'for_redistribution_files_only' / 'lib' / 'bin' / os_platform
+dirs = {
+    'npal': npal_directory,
+    'script': npal_directory / '+Wrapper',
+    'distribution': Path('.') / 'dist',
+    'compilation': npal_directory / f"{os_platform[:3]}_visualize" / 'for_redistribution_files_only' / 'lib' / 'bin' / os_platform
+}
 
 # List of known hidden imports
 hidden_imports = ['xml.etree', 'xml.etree.ElementTree', 'scikit-image', 'mx.DateTime', 'h5py.defs', 'h5py.utils',
                   'h5py.h5ac', 'h5py._proxy']
-hidden_paths = [script_directory]
+hidden_paths = [dirs['script']]
 data_files = []
 
 # List Python files in the directory
@@ -70,16 +94,16 @@ for eachLib in schema_libraries:
 
 # Formulate arguments
 hidden_imports_string = ' '.join(f"--hidden-import={import_name}" for import_name in hidden_imports)
-paths_string = ' '.join(f"--paths={script_directory / local_file}" for local_file in python_files)
+paths_string = ' '.join(f"--paths={dirs['script'] / local_file}" for local_file in python_files)
 data_string = ' '.join(f"--add-data={data_file}:." for data_file in data_files)
 
 # Clear pyinstaller cache
-for thisDir in [os. getcwd(), script_directory, compile_directory]:
+for thisDir in dirs.values():
     clear_cache(thisDir)
 
 # Process each Python file
 for file in python_files:
-    file_path = script_directory / file
+    file_path = dirs['script'] / file
 
     cmd = f"pyinstaller {paths_string} {data_string} {file_path} {hidden_imports_string} --onefile"
 
@@ -90,12 +114,4 @@ for file in python_files:
     subprocess.call(cmd, shell=True)
 
     # Define source and destination paths for moving files
-    source_file = distribution_directory / file.replace('py', 'exe')
-    destination_file = compile_directory / file.replace('py', 'exe')
-
-    # Move files from source to destination
-    try:
-        shutil.move(str(source_file), str(destination_file))
-        print(f"Successfully compiled {destination_file}.\n")
-    except FileNotFoundError:
-        print(f"ERROR: Compilation failed for {source_file}...\n")
+    validate_file(dirs, file, cmd)
