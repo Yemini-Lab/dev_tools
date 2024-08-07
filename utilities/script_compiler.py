@@ -55,9 +55,9 @@ def validate_file(paths, file, cmd):
     if state:
         destination_file = paths['compilation'] / file.replace('py', 'exe')
         shutil.move(str(executable_file), str(destination_file))
-        print(f"Successfully compiled {destination_file}.\n\n")
+        print(f"Successfully compiled {destination_file}.\n")
     elif (state != 1) and ('--onefile' in cmd):
-        print(f"Failed to compile {file}. Attempting to salvage with expanded packaging...\n\n")
+        print(f"Failed to compile {file}. Attempting to salvage with expanded packaging...\n")
         cmd = cmd.replace(' --onefile', '')
         subprocess.call(cmd, shell=True)
         validate_file(paths, file, cmd)
@@ -147,4 +147,5 @@ for file in python_files:
     cmd = f"{os_call}pyinstaller {paths_string} {data_string} {file_path} {hidden_imports_string} --onefile"
     subprocess.call(cmd, shell=True)
 
+    print(f"\nValidating{file}...")
     validate_file(dirs, file, cmd)
