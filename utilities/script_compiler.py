@@ -22,19 +22,41 @@ def list_python_files(path):
     return python_files
 
 
+def compare_output(cmd_1, cmd_2):
+    """Compare the output of two different system calls."""
+
+    try:
+        output_1 = check_output(cmd_1, stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError as e:
+        output_1 = e.output
+
+    try:
+        output_2 = check_output(cmd_2, stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError as e:
+        output_2 = e.output
+
+    is_within = output_1 in output_2
+
+    if not is_within:
+        print(f"{cmd_1}:\n{output_1}")
+        print(f"{cmd_2}:\n{output_2}")
+
+    return is_within
+
+
 def validate_file(paths, file, cmd):
     """Check whether the compiled file executes the same as the python original."""
 
     script_file = paths['script'] / file
     executable_file = paths['distribution'] / file.replace('py', 'exe')
 
-    state = check_output(f"python {script_file}", stderr=subprocess.STDOUT) in check_output(executable_file, stderr=subprocess.STDOUT)
+    state = compare_output(f"python {str(script_file)}", executable_file)
 
     if state:
         destination_file = paths['compilation'] / file.replace('py', 'exe')
         shutil.move(str(executable_file), str(destination_file))
         print(f"Successfully compiled {destination_file}.\n\n")
-    elif state != 1 and '--onefile' in cmd:
+    elif (state != 1) and ('--onefile' in cmd):
         print(f"Failed to compile {file}. Attempting to salvage with expanded packaging...\n\n")
         cmd = cmd.replace(' --onefile', '')
         subprocess.call(cmd, shell=True)
@@ -76,9 +98,11 @@ def clear_cache(path):
 os_platform = platform.system().lower().replace('darwin', 'macos')
 
 if os_platform == 'windows':
+    os_call = ''
     npal_directory = Path(
         f"C:\\Users\\{os.environ.get('USER', os.environ.get('USERNAME'))}\\Documents\\GitHub\\NeuroPAL_ID")
 else:
+    os_call = 'alias pip=pip3; '
     npal_directory = Path(f"/Users/{os.environ.get('USER', os.environ.get('USERNAME'))}/Documents/GitHub/NeuroPAL_ID")
 
 dirs = {
@@ -111,20 +135,16 @@ paths_string = ' '.join(f"--paths={dirs['script'] / local_file}" for local_file 
 data_string = ' '.join(f"--add-data={data_file}:." for data_file in data_files)
 
 # Clear pyinstaller cache
+print('\nClearing cache...')
 for thisDir in dirs.values():
     clear_cache(thisDir)
 
 # Process each Python file
 for file in python_files:
+    print(f"\nCompiling {file}...")
+
     file_path = dirs['script'] / file
-
-    cmd = f"pyinstaller {paths_string} {data_string} {file_path} {hidden_imports_string} --onefile"
-
-    if os_platform == 'macos':
-        subprocess.call('alias pip=pip3', shell=True)
-
-    # Execute the command
+    cmd = f"{os_call}pyinstaller {paths_string} {data_string} {file_path} {hidden_imports_string} --onefile"
     subprocess.call(cmd, shell=True)
 
-    # Define source and destination paths for moving files
     validate_file(dirs, file, cmd)
