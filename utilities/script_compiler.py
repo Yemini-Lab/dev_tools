@@ -15,14 +15,28 @@ def clear_cache(path):
         for file in files:
             if file.endswith('.spec') or file.endswith('.exe'):
                 file_path = os.path.join(root, file)
-                os.remove(file_path)
-                print(f"Deleted file: {file_path}")
+
+                try:
+                    if platform.system().lower() == 'darwin':
+                        os.chmod(file_path, 0o777)
+                        
+                    os.remove(file_path)
+                    print(f"Deleted cache file: {file_path}")
+                except:
+                    print(f"Failed to delete cache file: {file_path}")
 
         for dir_name in dirs:
             if dir_name in ('build', 'dist', '__pycache__'):
                 dir_path = os.path.join(root, dir_name)
-                shutil.rmtree(dir_path)
-                print(f"Deleted directory: {dir_path}")
+
+                try:
+                    if platform.system().lower() == 'darwin':
+                        os.chmod(dir_path, 0o777)
+
+                    shutil.rmtree(dir_path)
+                    print(f"Deleted cache directory: {dir_path}")
+                except:
+                    print(f"Failed to delete cache directory: {dir_path}")
 
 
 def list_data_files(path):
