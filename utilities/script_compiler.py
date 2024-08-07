@@ -25,8 +25,8 @@ def list_python_files(path):
 def validate_file(paths, file, cmd):
     """Check whether the compiled file executes the same as the python original."""
 
-    script_file = paths['compilation'] / file
-    executable_file = paths['compilation'] / file.replace('py', 'exe')
+    script_file = paths['script'] / file
+    executable_file = paths['distribution'] / file.replace('py', 'exe')
 
     state = check_output(f"python {script_file}", stderr=subprocess.STDOUT) in check_output(executable_file, stderr=subprocess.STDOUT)
 
