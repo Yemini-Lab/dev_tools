@@ -147,5 +147,5 @@ for file in python_files:
     cmd = f"{os_call}pyinstaller {paths_string} {data_string} {file_path} {hidden_imports_string} --onefile"
     subprocess.call(cmd, shell=True)
 
-    print(f"\nValidating{file}...")
+    print(f"\nValidating {file}...")
     validate_file(dirs, file, cmd)
