@@ -5,35 +5,29 @@ import pynwb
 import shutil
 import platform
 import subprocess
-from subprocess import check_output
 from pathlib import Path
 
-def list_data_files(path):
-    """Lists all data files paths for given library path."""
+def list_files(path, fmts):
+    """List all files of the given format(s) within the giving directory."""
     files = os.listdir(path)
-    data_files = [os.path.join(path, file) for file in files if not file.endswith(('.py', '.pyc', '.pyd'))]
-    return data_files
-
-
-def list_python_files(path):
-    """List all Python files in the given directory."""
-    files = os.listdir(path)
-    python_files = [file for file in files if file.endswith('.py')]
-    return python_files
+    files = [os.path.join(path, file) for file in files if file.endswith(fmts)]
+    return files
 
 
 def compare_output(cmd_1, cmd_2):
     """Compare the output of two different system calls."""
 
     try:
-        output_1 = check_output(cmd_1, stderr=subprocess.STDOUT)
+        output_1 = subprocess.run(cmd_1, check=True, capture_output=True)
+        output_1 = output_1.stdout
     except subprocess.CalledProcessError as e:
-        output_1 = e.output
+        output_1 = e.output.decode()
 
     try:
-        output_2 = check_output(cmd_2, stderr=subprocess.STDOUT)
+        output_2 = subprocess.run(cmd_2, check=True, capture_output=True)
+        output_2 = output_2.stdout
     except subprocess.CalledProcessError as e:
-        output_2 = e.output
+        output_2 = e.output.decode()
 
     is_within = output_1 in output_2
 
@@ -119,7 +113,7 @@ hidden_paths = [dirs['script']]
 data_files = []
 
 # List Python files in the directory
-python_files = list_python_files(dirs['script'])
+python_files = list_files(dirs['script'], '.py')
 
 # Populate contingency lists
 schema_libraries = [pynwb, h5py, hdmf]
@@ -127,7 +121,9 @@ schema_libraries = [pynwb, h5py, hdmf]
 for eachLib in schema_libraries:
     lib_path = Path(eachLib.__file__).parent
     hidden_paths.extend([str(lib_path)])
-    data_files.extend(list_data_files(lib_path))
+    sub_directories = [p[0] for p in os.walk(lib_path)]
+    for sub_dir in sub_directories:
+        data_files.extend(list_files(sub_dir, ('.yaml', '.dll')))
 
 # Formulate arguments
 hidden_imports_string = ' '.join(f"--hidden-import={import_name}" for import_name in hidden_imports)
@@ -148,4 +144,4 @@ for file in python_files:
     subprocess.call(cmd, shell=True)
 
     print(f"\nValidating {file}...")
-    validate_file(dirs, file, cmd)
+    validate_file(dirs, os.path.basename(file), cmd)
