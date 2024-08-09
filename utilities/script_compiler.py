@@ -66,7 +66,7 @@ def validate_file(paths, file, cmd):
 
 def clear_cache(path):
     """Deletes all pyinstaller-related cache files."""
-    print("\nClearing cache...")
+    print(f"\nClearing {path} cache...")
     for root, dirs, files in os.walk(path, topdown=False):
         for file in files:
             if file.endswith(".spec") or file.endswith(".exe"):
@@ -100,7 +100,7 @@ def get_os():
     return platform.system().lower().replace("darwin", "macos")
 
 
-def formulate_cmd(os_platform, file_path):
+def formulate_cmd(file_path):
     """Compose pyinstaller command."""
     os_platform = get_os()
 
@@ -154,7 +154,7 @@ if __name__ == "__main__":
         user = Path(f"/Users/{os.environ.get('USER', os.environ.get('USERNAME'))}")
 
     # Find rest of the paths we'll be using.
-    dirs = {"npal", os.path.join(user, "Documents", "GitHub", "NeuroPAL_ID")}
+    dirs = {"npal": Path(os.path.join(user, "Documents", "GitHub", "NeuroPAL_ID"))}
     dirs["script"] = dirs["npal"] / "+Wrapper"
     dirs["distribution"] = Path(".") / "dist"
     dirs["compilation"] = (
@@ -165,7 +165,7 @@ if __name__ == "__main__":
         / "bin"
         / os_platform
     )
-    
+
     # Initialize list of known hidden imports
     hidden_imports = [
         "xml.etree",
