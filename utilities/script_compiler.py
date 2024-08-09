@@ -144,20 +144,6 @@ def formulate_cmd(os_platform, file_path):
 
 
 if __name__ == "__main__":
-    # Initialize list of known hidden imports
-    hidden_imports = [
-        "xml.etree",
-        "xml.etree.ElementTree",
-        "scikit-image",
-        "mx.DateTime",
-        "h5py.defs",
-        "h5py.utils",
-        "h5py.h5ac",
-        "h5py._proxy",
-    ]
-    hidden_paths = [dirs["script"]]
-    data_files = []
-
     # Get operating system.
     os_platform = get_os()
 
@@ -179,6 +165,20 @@ if __name__ == "__main__":
         / "bin"
         / os_platform
     )
+    
+    # Initialize list of known hidden imports
+    hidden_imports = [
+        "xml.etree",
+        "xml.etree.ElementTree",
+        "scikit-image",
+        "mx.DateTime",
+        "h5py.defs",
+        "h5py.utils",
+        "h5py.h5ac",
+        "h5py._proxy",
+    ]
+    hidden_paths = [dirs["script"]]
+    data_files = []
 
     # List Python files in the script directory
     python_files = list_files(dirs["script"], ".py")
