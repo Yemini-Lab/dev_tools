@@ -6,6 +6,7 @@ import shutil
 import platform
 import subprocess
 from pathlib import Path
+from dotenv import load_dotenv
 
 def list_files(path, fmts):
     """List all files of the given format(s) within the giving directory."""
@@ -41,6 +42,7 @@ def compare_output(cmd_1, cmd_2):
 def validate_file(paths, file, cmd):
     """Check whether the compiled file executes the same as the python original."""
 
+    print(f"\nValidating {file}...")
     script_file = paths['script'] / file
     executable_file = paths['distribution'] / file.replace('py', 'exe')
 
@@ -52,7 +54,7 @@ def validate_file(paths, file, cmd):
         print(f"Successfully compiled {destination_file}.\n")
     elif (state != 1) and ('--onefile' in cmd):
         print(f"Failed to compile {file}. Attempting to salvage with expanded packaging...\n")
-        cmd = cmd.replace('--onefile', '--noconfirm')
+        cmd = cmd.replace('--onefile', '--onedir --noconfirm')
         subprocess.call(cmd, shell=True)
         validate_file(paths, file, cmd)
     else:
@@ -60,6 +62,7 @@ def validate_file(paths, file, cmd):
 
 def clear_cache(path):
     """Deletes all pyinstaller-related cache files."""
+    print('\nClearing cache...')
     for root, dirs, files in os.walk(path, topdown=False):
         for file in files:
             if file.endswith('.spec') or file.endswith('.exe'):
@@ -88,60 +91,73 @@ def clear_cache(path):
                     print(f"Failed to delete cache directory: {dir_path}")
 
 
-# Define directories
-os_platform = platform.system().lower().replace('darwin', 'macos')
+def get_os():
+    """Retrieve operating system."""
+    return platform.system().lower().replace('darwin', 'macos')
 
-if os_platform == 'windows':
-    os_call = ''
-    npal_directory = Path(
-        f"C:\\Users\\{os.environ.get('USER', os.environ.get('USERNAME'))}\\Documents\\GitHub\\NeuroPAL_ID")
-else:
-    os_call = 'alias pip=pip3; '
-    npal_directory = Path(f"/Users/{os.environ.get('USER', os.environ.get('USERNAME'))}/Documents/GitHub/NeuroPAL_ID")
+def formulate_cmd(os_platform, file_path)
+    """Compose pyinstaller command."""
+    os_platform = get_os()
 
-dirs = {
-    'npal': npal_directory,
-    'script': npal_directory / '+Wrapper',
-    'distribution': Path('.') / 'dist',
-    'compilation': npal_directory / f"{os_platform[:3]}_visualize" / 'for_redistribution_files_only' / 'lib' / 'bin' / os_platform
-}
+    schema_libraries = [pynwb, h5py, hdmf]
 
-# List of known hidden imports
-hidden_imports = ['xml.etree', 'xml.etree.ElementTree', 'scikit-image', 'mx.DateTime', 'h5py.defs', 'h5py.utils',
-                  'h5py.h5ac', 'h5py._proxy']
-hidden_paths = [dirs['script']]
-data_files = []
+    for eachLib in schema_libraries:
+        lib_path = Path(eachLib.__file__).parent
+        hidden_paths.extend([str(lib_path)])
+        sub_directories = [p[0] for p in os.walk(lib_path)]
+        for sub_dir in sub_directories:
+            data_files.extend(list_files(sub_dir, ('.yaml', '.dll')))
 
-# List Python files in the directory
-python_files = list_files(dirs['script'], '.py')
+    hidden_imports_string = ' '.join(f"--hidden-import={import_name}" for import_name in hidden_imports)
+    paths_string = ' '.join(f"--paths={dirs['script'] / local_file}" for local_file in python_files)
+    data_string = ' '.join(f"--add-data={data_file}:." for data_file in data_files)
 
-# Populate contingency lists
-schema_libraries = [pynwb, h5py, hdmf]
+    if os_platform == 'windows':
+        cmd = f"pyinstaller {paths_string} {data_string} {file_path} {hidden_imports_string} --onefile"
+    elif os_platform == 'macos':
+        load_dotenv(dotenv_path=Path(os.getcwd()) / ".env")
+        dev_id = os.getenv("DEVELOPER_IDENTITY")
+        plist = os.getenv("ENTITLEMENTS")
+        codesign_string = f'--codesign-identity "{dev_id}" --osx-entitlements-file="{plist}"'
 
-for eachLib in schema_libraries:
-    lib_path = Path(eachLib.__file__).parent
-    hidden_paths.extend([str(lib_path)])
-    sub_directories = [p[0] for p in os.walk(lib_path)]
-    for sub_dir in sub_directories:
-        data_files.extend(list_files(sub_dir, ('.yaml', '.dll')))
+        cmd = f"alias pip=pip3;pyinstaller {paths_string} {data_string} {codesign_string} {file_path} {hidden_imports_string} --onefile"
 
-# Formulate arguments
-hidden_imports_string = ' '.join(f"--hidden-import={import_name}" for import_name in hidden_imports)
-paths_string = ' '.join(f"--paths={dirs['script'] / local_file}" for local_file in python_files)
-data_string = ' '.join(f"--add-data={data_file}:." for data_file in data_files)
+    return cmd
 
-# Clear pyinstaller cache
-print('\nClearing cache...')
-for thisDir in dirs.values():
-    clear_cache(thisDir)
+if __name__ == "__main__":
+    # Initialize list of known hidden imports
+    hidden_imports = ['xml.etree', 'xml.etree.ElementTree', 'scikit-image', 'mx.DateTime', 'h5py.defs', 'h5py.utils',
+                      'h5py.h5ac', 'h5py._proxy']
+    hidden_paths = [dirs['script']]
+    data_files = []
 
-# Process each Python file
-for file in python_files:
-    print(f"\nCompiling {file}...")
+    # Get operating system.
+    os_platform = get_os()
 
-    file_path = dirs['script'] / file
-    cmd = f"{os_call}pyinstaller {paths_string} {data_string} {file_path} {hidden_imports_string} --onefile"
-    subprocess.call(cmd, shell=True)
+    # Find user directory.
+    if os_platform == 'windows':
+        user = Path(f"C:\\Users\\{os.environ.get('USER', os.environ.get('USERNAME'))}")
+    else:
+        user = Path(f"/Users/{os.environ.get('USER', os.environ.get('USERNAME'))}")
 
-    print(f"\nValidating {file}...")
-    validate_file(dirs, os.path.basename(file), cmd)
+    # Find rest of the paths we'll be using.
+    dirs = {'npal', os.path.join(user, 'Documents', 'GitHub', 'NeuroPAL_ID')}
+    dirs['script'] = dirs['npal'] / '+Wrapper'
+    dirs['distribution'] = Path('.') / 'dist'
+    dirs['compilation'] = dirs['npal'] / f"{os_platform[:3]}_visualize" / 'for_redistribution_files_only' / 'lib' / 'bin' / os_platform
+
+    # List Python files in the script directory
+    python_files = list_files(dirs['script'], '.py')
+
+    # Clear pyinstaller cache
+    for thisDir in dirs.values():
+        clear_cache(thisDir)
+
+    # Process each Python file
+    for file in python_files:
+        file_path = dirs['script'] / file
+
+        print(f"\nCompiling {file}...")
+        cmd = formulate_cmd(file_path)
+        subprocess.call(cmd, shell=True)
+        validate_file(dirs, os.path.basename(file), cmd)

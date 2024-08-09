@@ -10,3 +10,4 @@
 .DS_Store
 /utilities/dist
 *.exe
+utilities/.env
