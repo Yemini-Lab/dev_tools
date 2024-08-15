@@ -124,23 +124,25 @@ def formulate_cmd(file_path):
     if os_platform == "windows":
         cmd = f"pyinstaller {paths_string} {data_string} {file_path} {hidden_imports_string} --onefile"
     elif os_platform == "macos":
-        secret = Path(os.getcwd()) / ".env"
-
-        if not os.path.isfile(secret):
-            raise FileNotFoundError(
-                "Could not find codesign secret. Instantiate repo secrets in local directory."
-            )
-
-        load_dotenv(dotenv_path=secret)
-        dev_id = os.getenv("DEVELOPER_IDENTITY")
-        plist = os.getenv("ENTITLEMENTS")
-        codesign_string = (
-            f'--codesign-identity "{dev_id}" --osx-entitlements-file="{plist}"'
-        )
-
-        cmd = f"alias pip=pip3;pyinstaller {paths_string} {data_string} {codesign_string} {file_path} {hidden_imports_string} --onefile"
+        cmd = f"alias pip=pip3;pyinstaller {paths_string} {data_string} {file_path} {hidden_imports_string} --onefile"
 
     return cmd
+
+
+def codesign(file):
+    secret = Path(os.getcwd()) / ".env"
+
+    if not os.path.isfile(secret):
+        raise FileNotFoundError(
+            "Could not find codesign secret. Instantiate repo secrets in local directory."
+        )
+
+    load_dotenv(dotenv_path=secret)
+    dev_id = os.getenv("DEVELOPER_IDENTITY")
+    plist = os.getenv("ENTITLEMENTS")
+
+    cmd = f'codesign --deep --force --verbove=4 --options=runtime -s {dev_id} --entitlements {plist} {file_path.replace(".py", "")}'
+    subprocess.call(cd_cmd, shell=True)
 
 
 if __name__ == "__main__":
@@ -194,4 +196,8 @@ if __name__ == "__main__":
         print(f"\nCompiling {file}...")
         cmd = formulate_cmd(file_path)
         subprocess.call(cmd, shell=True)
+
+        if os_platform == 'macos':
+            cd_cmd = codesign(file_path)
+
         validate_file(dirs, os.path.basename(file), cmd)
