@@ -24,6 +24,19 @@ from pathlib import Path
 from docopt import docopt
 from dotenv import load_dotenv
 
+schema_libraries = [pynwb, h5py, hdmf]
+hidden_paths = []
+data_files = []
+hidden_imports = [
+    "xml.etree",
+    "xml.etree.ElementTree",
+    "scikit-image",
+    "mx.DateTime",
+    "h5py.defs",
+    "h5py.utils",
+    "h5py.h5ac",
+    "h5py._proxy",
+]
 
 def list_files(path, fmts):
     """List all files of the given format(s) within the giving directory."""
@@ -118,15 +131,6 @@ def formulate_cmd(file_path):
     """Compose pyinstaller command."""
     system = get_os()
 
-    schema_libraries = [pynwb, h5py, hdmf]
-
-    for eachLib in schema_libraries:
-        lib_path = Path(eachLib.__file__).parent
-        hidden_paths.extend([str(lib_path)])
-        sub_directories = [p[0] for p in os.walk(lib_path)]
-        for sub_dir in sub_directories:
-            data_files.extend(list_files(sub_dir, (".yaml", ".dll")))
-
     hidden_imports_string = " ".join(
         f"--hidden-import={import_name}" for import_name in hidden_imports
     )
@@ -164,13 +168,13 @@ def compilation_routine(system, user, args):
     dirs = {"npal": Path(os.path.join(user, "Documents", "GitHub", "NeuroPAL_ID"))}
     dirs["distribution"] = Path(".") / "dist"
 
-    if args["input_path"] is None:
-        dirs["script"] = args["input_path"]
+    if args["--input_path"] is not None:
+        dirs["script"] = Path(args["--input_path"])
     else:
         dirs["script"] = dirs["npal"] / "+Wrapper"
 
-    if args["outputh_path"] is None:
-        dirs["compilation"] = args["output_path"]
+    if args["--output_path"] is not None:
+        dirs["compilation"] = Path(args["--output_path"])
     else:
         dirs["compilation"] = (
             dirs["npal"]
@@ -178,26 +182,20 @@ def compilation_routine(system, user, args):
             / "for_redistribution_files_only"
             / "lib"
             / "bin"
-            / os_platform
+            / system
         )
-
-    # Initialize list of known hidden imports
-    hidden_imports = [
-        "xml.etree",
-        "xml.etree.ElementTree",
-        "scikit-image",
-        "mx.DateTime",
-        "h5py.defs",
-        "h5py.utils",
-        "h5py.h5ac",
-        "h5py._proxy",
-    ]
-    hidden_paths = [dirs["script"]]
-    data_files = []
 
     # List Python files in the script directory
     python_files = list_files(dirs["script"], ".py")
     hidden_imports.extend(python_files)
+    hidden_paths += [dirs["script"]]
+
+    for eachLib in schema_libraries:
+        lib_path = Path(eachLib.__file__).parent
+        hidden_paths.extend([str(lib_path)])
+        sub_directories = [p[0] for p in os.walk(lib_path)]
+        for sub_dir in sub_directories:
+            data_files.extend(list_files(sub_dir, (".yaml", ".dll")))
 
     # Clear pyinstaller cache
     for thisDir in dirs.values():
@@ -215,18 +213,18 @@ def compilation_routine(system, user, args):
             if system == 'macos':
                 cd_cmd = codesign(file_path)
 
-            if args["validate_files"] is True:
+            if args["--validate_files"] is True:
                 state = validate_file(dirs, os.path.basename(file), cmd)
             else:
                 state = 1
 
-            if state or args["on_fail"] is None:
+            if state or args["--on_fail"] is None:
                 destination_file = paths["compilation"] / file.replace("py", "exe")
                 shutil.move(str(executable_file), str(destination_file))
             else:
-                if args["on_fail"] == "deletefile":
+                if args["--on_fail"] == "deletefile":
                     os.remove(file_path.replace('py', 'exe'))
-                elif args["on_fail"] == "raiseerror":
+                elif args["--on_fail"] == "raiseerror":
                     raise RuntimeError(f"Failed to validate {file.replace('py', 'exe')}!")
 
 if __name__ == "__main__":
@@ -237,9 +235,6 @@ if __name__ == "__main__":
         user = Path(f"C:\\Users\\{os.environ.get('USER', os.environ.get('USERNAME'))}")
     else:
         user = Path(f"/Users/{os.environ.get('USER', os.environ.get('USERNAME'))}")
-
-    print(args)
-    raise ValueError
 
     compilation_routine(system, user, args)
 
