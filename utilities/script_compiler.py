@@ -24,20 +24,6 @@ from pathlib import Path
 from docopt import docopt
 from dotenv import load_dotenv
 
-schema_libraries = [pynwb, h5py, hdmf]
-hidden_paths = []
-data_files = []
-hidden_imports = [
-    "xml.etree",
-    "xml.etree.ElementTree",
-    "scikit-image",
-    "mx.DateTime",
-    "h5py.defs",
-    "h5py.utils",
-    "h5py.h5ac",
-    "h5py._proxy",
-]
-
 def list_files(path, fmts):
     """List all files of the given format(s) within the giving directory."""
     files = os.listdir(path)
@@ -93,7 +79,7 @@ def validate_file(paths, file, cmd):
 
 def clear_cache(path):
     """Deletes all pyinstaller-related cache files."""
-    print(f"\nClearing {path} cache...")
+    print(f"Clearing {path} cache...")
     for root, dirs, files in os.walk(path, topdown=False):
         for file in files:
             if file.endswith(".spec") or file.endswith(".exe"):
@@ -113,7 +99,7 @@ def clear_cache(path):
                 dir_path = os.path.join(root, dir_name)
 
                 try:
-                    if platform.system().lower() == "darwin":
+                    if platform.os_platform().lower() == "darwin":
                         os.chmod(dir_path, 0o777)
 
                     shutil.rmtree(dir_path)
@@ -127,21 +113,21 @@ def get_os():
     return platform.system().lower().replace("darwin", "macos")
 
 
-def formulate_cmd(file_path):
+def formulate_cmd(dirs, blindspots, file_path):
     """Compose pyinstaller command."""
-    system = get_os()
+    os_platform = get_os()
 
     hidden_imports_string = " ".join(
-        f"--hidden-import={import_name}" for import_name in hidden_imports
+        f"--hidden-import={import_name}" for import_name in blindspots["hidden_imports"]
     )
     paths_string = " ".join(
-        f"--paths={dirs['script'] / local_file}" for local_file in python_files
+        f"--paths={dirs['script'] / local_file}" for local_file in blindspots["hidden_paths"]
     )
-    data_string = " ".join(f"--add-data={data_file}:." for data_file in data_files)
+    data_string = " ".join(f"--add-data={data_file}:." for data_file in blindspots["data_files"])
 
-    if system == "windows":
+    if os_platform == "windows":
         cmd = f"pyinstaller {paths_string} {data_string} {file_path} {hidden_imports_string} --onefile"
-    elif system == "macos":
+    elif os_platform == "macos":
         cmd = f"alias pip=pip3;pyinstaller {paths_string} {data_string} {file_path} {hidden_imports_string} --onefile"
 
     return cmd
@@ -163,7 +149,23 @@ def codesign(file):
     subprocess.call(cd_cmd, shell=True)
 
 
-def compilation_routine(system, user, args):
+def compilation_routine(os_platform, user, args):
+    blindspots = {
+        "schema_libraries": [hdmf, h5py, pynwb],
+        "hidden_paths": [],
+        "data_files": [],
+        "hidden_imports": [
+            "xml.etree",
+            "xml.etree.ElementTree",
+            "scikit-image",
+            "mx.DateTime",
+            "h5py.defs",
+            "h5py.utils",
+            "h5py.h5ac",
+            "h5py._proxy",
+        ]
+    }
+    
     # Find rest of the paths we'll be using.
     dirs = {"npal": Path(os.path.join(user, "Documents", "GitHub", "NeuroPAL_ID"))}
     dirs["distribution"] = Path(".") / "dist"
@@ -178,24 +180,24 @@ def compilation_routine(system, user, args):
     else:
         dirs["compilation"] = (
             dirs["npal"]
-            / f"{system[:3]}_visualize"
+            / f"{os_platform[:3]}_visualize"
             / "for_redistribution_files_only"
             / "lib"
             / "bin"
-            / system
+            / os_platform
         )
 
     # List Python files in the script directory
     python_files = list_files(dirs["script"], ".py")
-    hidden_imports.extend(python_files)
-    hidden_paths += [dirs["script"]]
+    blindspots["hidden_imports"].extend([os.path.basename(script) for script in python_files])
+    blindspots["hidden_paths"] += [dirs["script"]]
 
-    for eachLib in schema_libraries:
+    for eachLib in blindspots["schema_libraries"]:
         lib_path = Path(eachLib.__file__).parent
-        hidden_paths.extend([str(lib_path)])
+        blindspots["hidden_paths"].extend([str(lib_path)])
         sub_directories = [p[0] for p in os.walk(lib_path)]
         for sub_dir in sub_directories:
-            data_files.extend(list_files(sub_dir, (".yaml", ".dll")))
+            blindspots["data_files"].extend(list_files(sub_dir, (".yaml", ".dll")))
 
     # Clear pyinstaller cache
     for thisDir in dirs.values():
@@ -207,10 +209,13 @@ def compilation_routine(system, user, args):
             file_path = dirs["script"] / file
 
             print(f"\nCompiling {file}...")
-            cmd = formulate_cmd(file_path)
-            subprocess.call(cmd, shell=True)
+            cmd = formulate_cmd(dirs, blindspots, file_path)
+            code = subprocess.call(cmd, shell=True)
 
-            if system == 'macos':
+            if code != 0:
+                return
+
+            if os_platform == 'macos':
                 cd_cmd = codesign(file_path)
 
             if args["--validate_files"] is True:
@@ -219,7 +224,8 @@ def compilation_routine(system, user, args):
                 state = 1
 
             if state or args["--on_fail"] is None:
-                destination_file = paths["compilation"] / file.replace("py", "exe")
+                executable_file = str(file_path).replace("py", "exe")
+                destination_file = dirs["compilation"] / str(file).replace("py", "exe")
                 shutil.move(str(executable_file), str(destination_file))
             else:
                 if args["--on_fail"] == "deletefile":
@@ -230,12 +236,12 @@ def compilation_routine(system, user, args):
 if __name__ == "__main__":
     args = docopt(__doc__, version=f'NeuroPAL_ID Script Compiler')
 
-    system = get_os()
-    if system == "windows":
+    os_platform = get_os()
+    if os_platform == "windows":
         user = Path(f"C:\\Users\\{os.environ.get('USER', os.environ.get('USERNAME'))}")
     else:
         user = Path(f"/Users/{os.environ.get('USER', os.environ.get('USERNAME'))}")
 
-    compilation_routine(system, user, args)
+    compilation_routine(os_platform, user, args)
 
 
