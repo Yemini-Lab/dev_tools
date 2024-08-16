@@ -141,7 +141,7 @@ def codesign(file):
     dev_id = os.getenv("DEVELOPER_IDENTITY")
     plist = os.getenv("ENTITLEMENTS")
 
-    cmd = f'codesign --deep --force --verbove=4 --options=runtime -s {dev_id} --entitlements {plist} {file_path.replace(".py", "")}'
+    cmd = f'codesign --deep --force --verbose=4 --options=runtime -s {dev_id} --entitlements {plist} {file_path.replace(".py", "")}'
     subprocess.call(cd_cmd, shell=True)
 
 
@@ -191,13 +191,14 @@ if __name__ == "__main__":
 
     # Process each Python file
     for file in python_files:
-        file_path = dirs["script"] / file
+        if 'recommend_frames' in file:
+            file_path = dirs["script"] / file
 
-        print(f"\nCompiling {file}...")
-        cmd = formulate_cmd(file_path)
-        subprocess.call(cmd, shell=True)
+            print(f"\nCompiling {file}...")
+            cmd = formulate_cmd(file_path)
+            subprocess.call(cmd, shell=True)
 
-        if os_platform == 'macos':
-            cd_cmd = codesign(file_path)
+            if os_platform == 'macos':
+                cd_cmd = codesign(file_path)
 
-        validate_file(dirs, os.path.basename(file), cmd)
+            validate_file(dirs, os.path.basename(file), cmd)
