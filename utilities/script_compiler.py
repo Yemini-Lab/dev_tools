@@ -205,7 +205,8 @@ def compilation_routine(os_platform, user, args):
         
     # Process each Python file
     for file in python_files:
-        if os.path.basename(file) in args["--select_scripts"] or args["--select_scripts"] is None:
+        file = os.path.basename(file)
+        if file in args["--select_scripts"] or args["--select_scripts"] is None:
             file_path = dirs["script"] / file
 
             print(f"\nCompiling {file}...")
@@ -219,13 +220,13 @@ def compilation_routine(os_platform, user, args):
                 cd_cmd = codesign(file_path)
 
             if args["--validate_files"] is True:
-                state = validate_file(dirs, os.path.basename(file), cmd)
+                state = validate_file(dirs, file, cmd)
             else:
                 state = 1
 
             if state or args["--on_fail"] is None:
-                executable_file = str(file_path).replace("py", "exe")
-                destination_file = dirs["compilation"] / str(file).replace("py", "exe")
+                executable_file = dirs["distribution"] / file.replace("py", "exe")
+                destination_file = dirs["compilation"] / file.replace("py", "exe")
                 shutil.move(str(executable_file), str(destination_file))
             else:
                 if args["--on_fail"] == "deletefile":
