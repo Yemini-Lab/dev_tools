@@ -11,6 +11,7 @@ Options:
     --output_path=<output_path>  			path to which compiled applications should be moved.
     --validate_files=<validate_files>  	    run validation routine after compilation. [default: False]
     --on_fail=<on_fail>                     what to do if validation fails. options include skipmove, deletefile, raiseerror.
+    --select_scripts=<select_scripts>       comma-separated list of specific scripts to compiler.
 """
 
 import os
@@ -204,7 +205,7 @@ def compilation_routine(os_platform, user, args):
         
     # Process each Python file
     for file in python_files:
-        if 'recommend_frames' in file:
+        if os.path.basename(file) in args["--select_scripts"] or args["--select_scripts"] is None:
             file_path = dirs["script"] / file
 
             print(f"\nCompiling {file}...")
