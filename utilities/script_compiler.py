@@ -194,7 +194,6 @@ def compilation_routine(os_platform, user, args):
 
     for eachLib in blindspots["schema_libraries"]:
         lib_path = Path(eachLib.__file__).parent
-        blindspots["hidden_paths"].extend([str(lib_path)])
         sub_directories = [p[0] for p in os.walk(lib_path)]
         for sub_dir in sub_directories:
             blindspots["data_files"].extend(list_files(sub_dir, (".yaml", ".dll")))
@@ -202,7 +201,7 @@ def compilation_routine(os_platform, user, args):
     # Clear pyinstaller cache
     for thisDir in dirs.values():
         clear_cache(thisDir)
-
+        
     # Process each Python file
     for file in python_files:
         if 'recommend_frames' in file:
