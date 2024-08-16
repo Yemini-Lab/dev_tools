@@ -1,3 +1,18 @@
+"""
+script_compiler.py: Runs pyinstaller compilation & codesigning routines on NeuroPAL_ID/+Wrapper scripts.
+
+Usage:
+    script_compiler.py -h | --help
+    script_compiler.py [options]
+
+Options:
+    -h --help                           	show this message and exit.
+    --input_path=<input_path>  			    path containing the scripts to be compiled.
+    --output_path=<output_path>  			path to which compiled applications should be moved.
+    --validate_files=<validate_files>  	    run validation routine after compilation. [default: False]
+    --on_fail=<on_fail>                     what to do if validation fails. options include skipmove, deletefile, raiseerror.
+"""
+
 import os
 import h5py
 import hdmf
@@ -6,6 +21,7 @@ import shutil
 import platform
 import subprocess
 from pathlib import Path
+from docopt import docopt
 from dotenv import load_dotenv
 
 
@@ -50,18 +66,16 @@ def validate_file(paths, file, cmd):
     state = compare_output(f"python {str(script_file)}", executable_file)
 
     if state:
-        destination_file = paths["compilation"] / file.replace("py", "exe")
-        shutil.move(str(executable_file), str(destination_file))
         print(f"Successfully compiled {destination_file}.\n")
+        return state
     elif (state != 1) and ("--onefile" in cmd):
-        print(
-            f"Failed to compile {file}. Attempting to salvage with expanded packaging...\n"
-        )
+        print(f"Failed to compile {file}. Attempting to salvage with expanded packaging...\n")
         cmd = cmd.replace("--onefile", "--onedir --noconfirm")
         subprocess.call(cmd, shell=True)
         validate_file(paths, file, cmd)
     else:
-        raise ValueError("ERROR: COULD NOT SALVAGE FILE.")
+        print(f"FAILED VALIDATION: {file}.\n")
+        return state
 
 
 def clear_cache(path):
@@ -102,7 +116,7 @@ def get_os():
 
 def formulate_cmd(file_path):
     """Compose pyinstaller command."""
-    os_platform = get_os()
+    system = get_os()
 
     schema_libraries = [pynwb, h5py, hdmf]
 
@@ -121,9 +135,9 @@ def formulate_cmd(file_path):
     )
     data_string = " ".join(f"--add-data={data_file}:." for data_file in data_files)
 
-    if os_platform == "windows":
+    if system == "windows":
         cmd = f"pyinstaller {paths_string} {data_string} {file_path} {hidden_imports_string} --onefile"
-    elif os_platform == "macos":
+    elif system == "macos":
         cmd = f"alias pip=pip3;pyinstaller {paths_string} {data_string} {file_path} {hidden_imports_string} --onefile"
 
     return cmd
@@ -145,28 +159,27 @@ def codesign(file):
     subprocess.call(cd_cmd, shell=True)
 
 
-if __name__ == "__main__":
-    # Get operating system.
-    os_platform = get_os()
-
-    # Find user directory.
-    if os_platform == "windows":
-        user = Path(f"C:\\Users\\{os.environ.get('USER', os.environ.get('USERNAME'))}")
-    else:
-        user = Path(f"/Users/{os.environ.get('USER', os.environ.get('USERNAME'))}")
-
+def compilation_routine(system, user, args):
     # Find rest of the paths we'll be using.
     dirs = {"npal": Path(os.path.join(user, "Documents", "GitHub", "NeuroPAL_ID"))}
-    dirs["script"] = dirs["npal"] / "+Wrapper"
     dirs["distribution"] = Path(".") / "dist"
-    dirs["compilation"] = (
-        dirs["npal"]
-        / f"{os_platform[:3]}_visualize"
-        / "for_redistribution_files_only"
-        / "lib"
-        / "bin"
-        / os_platform
-    )
+
+    if args["input_path"] is None:
+        dirs["script"] = args["input_path"]
+    else:
+        dirs["script"] = dirs["npal"] / "+Wrapper"
+
+    if args["outputh_path"] is None:
+        dirs["compilation"] = args["output_path"]
+    else:
+        dirs["compilation"] = (
+            dirs["npal"]
+            / f"{system[:3]}_visualize"
+            / "for_redistribution_files_only"
+            / "lib"
+            / "bin"
+            / os_platform
+        )
 
     # Initialize list of known hidden imports
     hidden_imports = [
@@ -184,6 +197,7 @@ if __name__ == "__main__":
 
     # List Python files in the script directory
     python_files = list_files(dirs["script"], ".py")
+    hidden_imports.extend(python_files)
 
     # Clear pyinstaller cache
     for thisDir in dirs.values():
@@ -198,7 +212,35 @@ if __name__ == "__main__":
             cmd = formulate_cmd(file_path)
             subprocess.call(cmd, shell=True)
 
-            if os_platform == 'macos':
+            if system == 'macos':
                 cd_cmd = codesign(file_path)
 
-            validate_file(dirs, os.path.basename(file), cmd)
+            if args["validate_files"] is True:
+                state = validate_file(dirs, os.path.basename(file), cmd)
+            else:
+                state = 1
+
+            if state or args["on_fail"] is None:
+                destination_file = paths["compilation"] / file.replace("py", "exe")
+                shutil.move(str(executable_file), str(destination_file))
+            else:
+                if args["on_fail"] == "deletefile":
+                    os.remove(file_path.replace('py', 'exe'))
+                elif args["on_fail"] == "raiseerror":
+                    raise RuntimeError(f"Failed to validate {file.replace('py', 'exe')}!")
+
+if __name__ == "__main__":
+    args = docopt(__doc__, version=f'NeuroPAL_ID Script Compiler')
+
+    system = get_os()
+    if system == "windows":
+        user = Path(f"C:\\Users\\{os.environ.get('USER', os.environ.get('USERNAME'))}")
+    else:
+        user = Path(f"/Users/{os.environ.get('USER', os.environ.get('USERNAME'))}")
+
+    print(args)
+    raise ValueError
+
+    compilation_routine(system, user, args)
+
+
