@@ -206,33 +206,36 @@ def compilation_routine(os_platform, user, args):
     # Process each Python file
     for file in python_files:
         file = os.path.basename(file)
-        if file in args["--select_scripts"] or args["--select_scripts"] is None:
-            file_path = dirs["script"] / file
 
-            print(f"\nCompiling {file}...")
-            cmd = formulate_cmd(dirs, blindspots, file_path)
-            code = subprocess.call(cmd, shell=True)
+        if args["--select_scripts"] is not None and file not in args["--select_scripts"]:
+            continue
 
-            if code != 0:
-                return
+        file_path = dirs["script"] / file
 
-            if os_platform == 'macos':
-                cd_cmd = codesign(file_path)
+        print(f"\nCompiling {file}...")
+        cmd = formulate_cmd(dirs, blindspots, file_path)
+        code = subprocess.call(cmd, shell=True)
 
-            if args["--validate_files"] is True:
-                state = validate_file(dirs, file, cmd)
-            else:
-                state = 1
+        if code != 0:
+            return
 
-            if state or args["--on_fail"] is None:
-                executable_file = dirs["distribution"] / file.replace("py", "exe")
-                destination_file = dirs["compilation"] / file.replace("py", "exe")
-                shutil.move(str(executable_file), str(destination_file))
-            else:
-                if args["--on_fail"] == "deletefile":
-                    os.remove(file_path.replace('py', 'exe'))
-                elif args["--on_fail"] == "raiseerror":
-                    raise RuntimeError(f"Failed to validate {file.replace('py', 'exe')}!")
+        if os_platform == 'macos':
+            cd_cmd = codesign(file_path)
+
+        if args["--validate_files"] is True:
+            state = validate_file(dirs, file, cmd)
+        else:
+            state = 1
+
+        if state or args["--on_fail"] is None:
+            executable_file = dirs["distribution"] / file.replace("py", "exe")
+            destination_file = dirs["compilation"] / file.replace("py", "exe")
+            shutil.move(str(executable_file), str(destination_file))
+        else:
+            if args["--on_fail"] == "deletefile":
+                os.remove(file_path.replace('py', 'exe'))
+            elif args["--on_fail"] == "raiseerror":
+                raise RuntimeError(f"Failed to validate {file.replace('py', 'exe')}!")
 
 if __name__ == "__main__":
     args = docopt(__doc__, version=f'NeuroPAL_ID Script Compiler')
