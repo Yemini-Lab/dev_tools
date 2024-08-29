@@ -4,6 +4,7 @@
 |File|Function|
 |:-|:-|
 |script_compiler.py|Handles pyinstaller compilation for NeuroPAL_ID.|
+|codesigner.py|Codesigning utility that handles codesigning & notarization checks.|
 |avg_hist_generator.mlx|Iterates over all NeuroPAL mat files in a folder and generates their avg hist.|
 |update_nwb.ipynb|Updates specific modules within NWB files.|
 |xml_template_generator.mlx|Generates a stripped xml template from a given TrackMate file.
