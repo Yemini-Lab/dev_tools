@@ -25,6 +25,7 @@ import subprocess
 from pathlib import Path
 from docopt import docopt
 from dotenv import load_dotenv
+from tqdm import tqdm
 
 
 def grab_env()
@@ -46,16 +47,16 @@ def grab_env()
 
 
 def codesign_batch(files, args):
-    for file in files:
-        if file.endswith('\n'):
-            file = Path(file[:-1])
-        else:
-            file = Path(file)
+    files = [file.strip() for file in files]
+    with tqdm(total=len(files), desc="Processing files", unit="file") as pbar:
+        for file in files:
+            file_path = Path(file)
+            codesign_routine(file_path, args, pbar)
+            pbar.update(1)
 
-        codesign_routine(file, args)
 
-
-def codesign_routine(file, args):
+def codesign_routine(file, args, pbar):
+    pbar.set_description(f"Codesigning {file.name}")
     cmd = "codesign --verbose=4 "
 
     if args['--env']:
@@ -70,10 +71,11 @@ def codesign_routine(file, args):
     cmd += f"--options=runtime -s {dev_id} --entitlements={plist} {str(file)}"
     subprocess.call(cmd, shell=True)
 
-    code = notarization_routine(file, args)
+    code = notarization_routine(file, args, pbar)
 
 
-def notarization_routine(file, args):
+def notarization_routine(file, args, pbar):
+    pbar.set_description(f"Notarizing {file.name}")
     cmd = "xcrun notarytool submit "
 
     if args['--env']:
@@ -84,26 +86,33 @@ def notarization_routine(file, args):
         team_id = args['--team-id']
 
     cmd += f"--apple-id {apple_id} --password {password} --team-id {team_id} {str(file)}"
-    process = subprocess.call(cmd, shell=True, capture_output=True)
+    process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
 
     sub_time = datetime.datetime.now()
     sub_output = process.stdout.split("\n")
 
+    sub_id = None
     for line in sub_output:
         if "id:" in line:
             sub_id = line[5:]
+
+    if sub_id is None:
+        pbar.set_description(f"Failed notarizing {file.name}")
+        return 0
 
     cmd = cmd.replace("submit", "log").replace(str(file), "") + f" {sub_id}"
 
     log_ready = 0
     while log_ready == 0:
-        log_output = subprocess.call(cmd, shell=True, capture_output=True)
+        log_output = subprocess.run(cmd, shell=True, capture_output=True, text=True).stdout
         if "logFormatVersion" in log_output:
             log_ready = 1
 
             if "error" in log_output:
+                pbar.set_description(f"Failed to notarize {file.name}")
                 return 0
             else:
+                pbar.set_description(f"Succesfully notarized {file.name}")
                 return 1
 
         else:
@@ -119,7 +128,7 @@ def notarization_routine(file, args):
 
 if __name__ == "__main__":
     args = docopt(__doc__, version=f'Codesigning Utility')
-    print(args)
+    
     if args['--file'] is not None:
         codesign_routine(Path(args['--file']), args)
 
