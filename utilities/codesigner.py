@@ -100,7 +100,7 @@ def notarization_routine(file, args, pbar):
         pbar.set_description(f"Failed notarizing {file.name}")
         return 0
 
-    cmd = cmd.replace("submit", "log").replace(str(file), "") + f" {sub_id}"
+    cmd = cmd.replace("submit", "log").replace(f" {str(file)}", "") + f" {sub_id}"
 
     log_ready = 0
     while log_ready == 0:
