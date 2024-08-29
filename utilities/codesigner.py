@@ -118,7 +118,7 @@ def notarization_routine(file, args):
 
 
 if __name__ == "__main__":
-    args = docopt(__doc__, version=f'NeuroPAL_ID Codesigning Utility')
+    args = docopt(__doc__, version=f'Codesigning Utility')
     print(args)
     if args['--file'] is not None:
         codesign_routine(Path(args['--file']), args)
