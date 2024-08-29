@@ -93,7 +93,7 @@ def notarization_routine(file, args):
         if "id:" in line:
             sub_id = line[5:]
 
-    cmd = cmd.replace("submit", "log") + f" {sub_id}"
+    cmd = cmd.replace("submit", "log").replace(str(file), "") + f" {sub_id}"
 
     log_ready = 0
     while log_ready == 0:
@@ -110,8 +110,8 @@ def notarization_routine(file, args):
             current_time = datetime.datetime.now()
             time_diff = (current_time - sub_time).total_seconds() / 60.0
 
-            if time_diff > 20:
-                easygui.msgbox(f"Notarization for {str(file)} has been taking more than 20 minutes. This is unusual, and you may want to cancel the process and check for issues.", title="Warning!")
+            if time_diff > 30:
+                easygui.msgbox(f"Notarization for {str(file)} has been taking more than 30 minutes. This is unusual, and you may want to cancel the process and check for issues.", title="Warning!")
                 time.sleep(60)
             else:
                 time.sleep(60)
