@@ -11,7 +11,7 @@ Options:
     --files=<files>                         path to a textfile containing the paths of all files to be codesigned.
     --env                                   flags presence of local env file for developer identity details [default: False]
     --dev-id=<dev-id>                       developer identity
-    --apple-id<apple-id>                    lab apple id
+    --apple-id=<apple-id>                    lab apple id
     --password=<password>                   app password
     --team-id=<team-id>                     team id
     --entitlements=<entitlements>           path to plist file
@@ -28,7 +28,7 @@ from dotenv import load_dotenv
 from tqdm import tqdm
 
 
-def grab_env()
+def grab_env():
     secret = Path(os.getcwd()) / ".env"
 
     if not os.path.isfile(secret):
@@ -66,7 +66,7 @@ def codesign_routine(file, args, pbar):
         plist = args['--entitlements']
 
     if file.suffix == '.py':
-        cmd = "--force --deep "
+        cmd += "--force --deep "
 
     cmd += f"--options=runtime -s {dev_id} --entitlements={plist} {str(file)}"
     subprocess.call(cmd, shell=True)
@@ -130,7 +130,7 @@ if __name__ == "__main__":
     args = docopt(__doc__, version=f'Codesigning Utility')
     
     if args['--file'] is not None:
-        codesign_routine(Path(args['--file']), args)
+        codesign_routine(Path(args['--file']), args, tqdm(total=1))
 
     elif args['--files'] is not None:
         files = open(args['--files'], 'r').readlines()
