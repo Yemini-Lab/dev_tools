@@ -11,3 +11,4 @@
 /utilities/dist
 *.exe
 utilities/.env
+*.asv
