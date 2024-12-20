@@ -183,6 +183,6 @@ def visualize(nwb_obj):
     filename = f"{nwb_obj.subject.subject_id}_{datetime.now().strftime('%Y%m%d')}.mp4"
     ff_writer = animation.FFMpegWriter(fps=10)
     # Reduce padding around figure
-    plt.subplots_adjust(left=0.08, right=0.98, top=0.92, bottom=0.08, wspace=0.3, hspace=0.3)
+    plt.subplots_adjust(left=0.02, right=0.98, top=0.98, bottom=0.05, wspace=0.3, hspace=0.3)
     ani.save(filename=filename, writer=ff_writer)
     plt.show()
