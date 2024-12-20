@@ -14,17 +14,23 @@ def visualize_worm(nwb_obj):
     # Max intensity projection over z
     max_img = color_stack.max(axis=1)  # shape: (c, x, y)
 
-    rgb_img = np.zeros((max_img.shape[2], max_img.shape[1], 3), dtype=max_img.dtype)
+    rgb_img = np.zeros((max_img.shape[2], max_img.shape[1], 3), dtype=float)
     for i, chan_idx in enumerate(rgbw_indices[:3]):
         gamma = channel_gammas[chan_idx]
-        corrected = np.power(max_img[chan_idx, ...], 1 / gamma)
-        rgb_img[..., i] = corrected.T
+        channel_data = max_img[chan_idx, ...].astype(float)
+        # Normalize channel to [0,1]
+        max_val = channel_data.max() if channel_data.max() != 0 else 1
+        channel_data /= max_val
+        # Apply gamma correction
+        channel_data = np.power(channel_data, 1.0 / gamma)
+        # Scale back
+        channel_data *= max_val
+        rgb_img[..., i] = channel_data.T
 
     plt.imshow(rgb_img, origin='lower')
     plt.title(f"Worm visualization: {nwb_obj.subject.subject_id}")
     plt.axis('off')
 
-    # Add subject info to the right of the image
     subject_info = []
     if getattr(nwb_obj, 'subject', None) is not None:
         for attr in ['subject_id', 'age', 'description', 'genotype', 'sex', 'species', 'strain']:
