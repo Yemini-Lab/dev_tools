@@ -98,10 +98,10 @@ def plot_activity(ax, nwb_obj):
 
     # Create a 1x2 layout: left for 3x3 plots, right for legend
     # Increase the ratio so the legend space is relatively smaller
-    main_gs = main_spec.subgridspec(1, 2, width_ratios=[10, 1], wspace=0.1)
+    main_gs = main_spec.subgridspec(1, 2, width_ratios=[10, 2], wspace=0.1)
 
     # Left side: 3x3 grid of activity plots with minimal spacing
-    plot_gs = main_gs[0, 0].subgridspec(3, 3, hspace=0.1, wspace=0.1)
+    plot_gs = main_gs[0, 0].subgridspec(3, 3, hspace=0.3, wspace=0.1)
     axs = [fig.add_subplot(plot_gs[i // 3, i % 3]) for i in range(9)]
 
     # Right side: single cell for legend
@@ -157,7 +157,7 @@ def plot_activity(ax, nwb_obj):
 
     # Create a compact legend on the right with smaller font
     legend_handles = [mpatches.Patch(color=stimulus_colors[label], label=str(label)) for label in unique_stimuli]
-    legend_ax.legend(handles=legend_handles, loc='center', ncol=1, fontsize=6)
+    legend_ax.legend(handles=legend_handles, loc='right', ncol=1, fontsize=5)
 
 
 
