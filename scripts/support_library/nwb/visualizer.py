@@ -81,6 +81,8 @@ def visualize_video(nwb_obj):
 
 
 def visualize_activity(nwb_obj):
+    import matplotlib.pyplot as plt
+
     target_neurons = ['AWA', 'I2', 'AVA', 'AVB', 'VB2']
     activity_module = nwb_obj.processing['CalciumActivity']['ActivityTraces']
     activity_dict = {}
@@ -88,14 +90,27 @@ def visualize_activity(nwb_obj):
         neuron_name = activity_module.neuron[n]
         if neuron_name in target_neurons:
             activity_dict[neuron_name] = activity_module.activity[n]
-    if len(activity_dict) == 0:
-        print("No target neurons found.")
-        return
-    plt.figure()
-    for neuron, trace in activity_dict.items():
-        plt.plot(trace, label=neuron)
-    plt.legend()
-    plt.title("Calcium activity of selected neurons")
-    plt.xlabel("Time")
-    plt.ylabel("Fluorescence signal")
+
+    fig, axs = plt.subplots(len(target_neurons), 1, figsize=(6, 10))
+    if len(target_neurons) == 1:
+        axs = [axs]
+
+    for i, neuron in enumerate(target_neurons):
+        ax = axs[i]
+        if neuron in activity_dict:
+            ax.plot(activity_dict[neuron])
+            ax.set_title(f"{neuron} Activity")
+            ax.set_xlabel("Time")
+            ax.set_ylabel("Fluorescence")
+        else:
+            ax.set_facecolor("lightgrey")
+            ax.text(0.5, 0.5, "No activity found",
+                    horizontalalignment='center', verticalalignment='center',
+                    transform=ax.transAxes, color='black')
+            ax.set_xticks([])
+            ax.set_yticks([])
+            ax.set_title(f"{neuron} Activity")
+
+    plt.tight_layout()
     plt.show()
+
