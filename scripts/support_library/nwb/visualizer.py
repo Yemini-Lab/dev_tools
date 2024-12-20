@@ -12,13 +12,13 @@ def visualize_neurons(nwb_obj):
     neuron_labels = np.array(neurons.ID_labels)
     rgb_img = generate_mip(nwb_obj)
 
-    # Extract coordinates
+    # Extract just x and y
     x_coords = neuron_positions[:, 0]
     y_coords = neuron_positions[:, 1]
 
     # Filter for target neurons
     mask = np.isin(neuron_labels, target_neurons)
-    target_positions = neuron_positions[mask]
+    target_positions = neuron_positions[mask, :2]  # Ensure only x, y are taken
     target_labels = neuron_labels[mask]
 
     # Sort targets by y coordinate
@@ -26,9 +26,7 @@ def visualize_neurons(nwb_obj):
     target_positions = target_positions[sorted_indices]
     target_labels = target_labels[sorted_indices]
 
-    plt.imshow(rgb_img, origin='lower')
-
-    # Plot all neurons
+    plt.imshow(rgb_img, origin='lower', alpha=0.8)
     plt.scatter(x_coords, y_coords, facecolors='none', edgecolors='w', s=20, alpha=0.5)
 
     # Determine left label column x position
@@ -37,13 +35,14 @@ def visualize_neurons(nwb_obj):
     label_ys = np.linspace(target_positions[0, 1], target_positions[-1, 1], len(target_positions))
 
     # Draw labels and connecting lines
-    for (tx, ty), lbl, ly in zip(target_positions, target_labels, label_ys):
-        # Label on the left
+    for i in range(len(target_positions)):
+        tx, ty = target_positions[i]
+        lbl = target_labels[i]
+        ly = label_ys[i]
+
         plt.text(label_x, ly, lbl, color='white', fontsize=8,
                  bbox=dict(facecolor='black', alpha=0.3),
                  ha='right', va='center')
-
-        # Use a curved connection line
         con = ConnectionPatch(xyA=(label_x, ly), xyB=(tx, ty),
                               coordsA='data', coordsB='data',
                               arrowstyle='-', color='yellow', linewidth=1)
