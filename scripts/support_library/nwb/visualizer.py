@@ -91,20 +91,23 @@ def plot_activity(ax, nwb_obj):
     cmap = plt.cm.get_cmap('tab10', len(unique_stimuli))
     stimulus_colors = {label: cmap(i) for i, label in enumerate(unique_stimuli)}
 
-    # Adjust the layout: one row for legend, three rows for plots
-    # We reserve the top row (row=0) for the legend, and rows 1-3 for the neuron plots
+    # Create a 4x3 subgridspec: top row for legend, bottom 3x3 for activity
     main_gs = ax.get_subplotspec().subgridspec(4, 3, height_ratios=[0.3, 1, 1, 1])
-    legend_ax = ax.figure.add_subplot(main_gs[0, :])
+
+    # For the top row (legend), create a 1x1 subgridspec to get a single subplot
+    legend_gs = main_gs[0, :].subgridspec(1, 1)
+    legend_ax = ax.figure.add_subplot(legend_gs[0, 0])
+
+    # For the neuron plots, use the remaining 3 rows
     plot_gs = main_gs[1:, :]
 
-    # Now create the 3x3 axes for neuron activity
+    # Create the 3x3 axes for neuron activity
     axs = [ax.figure.add_subplot(plot_gs[i // 3, i % 3]) for i in range(9)]
 
     # Shade and plot each neuron
     for idx, neuron in enumerate(target_neurons):
         subax = axs[idx]
         # Shade background according to stimuli
-        # Assuming stimulus_timestamps are frame indices
         for i in range(len(stimulus_labels)):
             start = stimulus_timestamps[i]
             if i < len(stimulus_labels) - 1:
@@ -150,7 +153,7 @@ def plot_activity(ax, nwb_obj):
     for j in range(len(target_neurons), 9):
         axs[j].axis('off')
 
-    # Create a legend for the stimuli
+    # Create a legend for the stimuli in the legend_ax
     legend_handles = [mpatches.Patch(color=stimulus_colors[label], label=str(label)) for label in unique_stimuli]
     legend_ax.axis('off')
     legend_ax.legend(handles=legend_handles, loc='center', ncol=len(unique_stimuli), fontsize=8)
