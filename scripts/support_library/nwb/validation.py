@@ -86,3 +86,21 @@ def validate_processed(nwb_obj):
                 issue_list.append(f"{module_name} unexpected child class: {type(each_child).__name__}")
 
     return issue_list
+
+
+def validate(nwb_obj):
+    issue_list = []
+
+    subject_issues = validate_subject(nwb_obj)
+    if len(subject_issues) > 0:
+        issue_list.append(subject_issues)
+
+    acquisition_issues = validate_acquisitions(nwb_obj)
+    if len(acquisition_issues) > 0:
+        issue_list.append(acquisition_issues)
+
+    processing_issues = validate_processed(nwb_obj)
+    if len(processing_issues) > 0:
+        issue_list.append(processing_issues)
+
+    return len(issue_list) == 0
