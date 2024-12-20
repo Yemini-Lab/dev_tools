@@ -97,5 +97,5 @@ def visualize_activity(nwb_obj):
     plt.legend()
     plt.title("Calcium activity of selected neurons")
     plt.xlabel("Time")
-    plt.ylabel("Activity")
+    plt.ylabel("Fluorescence signal")
     plt.show()
