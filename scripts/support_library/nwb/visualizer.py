@@ -10,15 +10,14 @@ def visualize_worm(nwb_obj):
         print("Data format not as expected.")
         return
 
-    # Choose a middle z-plane
-    z_idx = color_stack.shape[1] // 2
-    # Extract that plane: shape is (c, x, y)
-    slice_img = color_stack[:, z_idx, :, :]
+    # Perform max intensity projection over z
+    max_img = color_stack.max(axis=1)  # now (c, x, y)
 
-    # Create an RGB image: (x, y, 3)
-    rgb_img = np.zeros((slice_img.shape[1], slice_img.shape[2], 3), dtype=slice_img.dtype)
+    # Create an RGB image with dimensions (y, x, 3)
+    rgb_img = np.zeros((max_img.shape[2], max_img.shape[1], 3), dtype=max_img.dtype)
     for i, chan_idx in enumerate(rgbw_indices[:3]):
-        rgb_img[..., i] = slice_img[chan_idx, ...]
+        # Transpose to (y, x)
+        rgb_img[..., i] = max_img[chan_idx, ...].T
 
     plt.imshow(rgb_img, origin='lower')
     plt.title(f"Worm visualization: {nwb_obj.subject.subject_id}")
@@ -34,13 +33,15 @@ def visualize_video(nwb_obj):
         print("Data format not as expected.")
         return
 
+    # Max intensity projection over z
+    max_projection = video_array.max(axis=3)  # (t, x, y, c)
+
     frame_idx = 0
-    # Choose a middle z-plane
-    z_idx = video_array.shape[3] // 2
-    # Create an RGB frame: (x, y, 3)
-    rgb_frame = np.zeros((video_array.shape[1], video_array.shape[2], 3), dtype=video_array.dtype)
+    # Create an RGB frame: (y, x, 3)
+    rgb_frame = np.zeros((max_projection.shape[2], max_projection.shape[1], 3), dtype=video_array.dtype)
     for i, chan_idx in enumerate([1, 2, 3]):
-        rgb_frame[..., i] = video_array[frame_idx, :, :, z_idx, chan_idx]
+        # Transpose to (y, x)
+        rgb_frame[..., i] = max_projection[frame_idx, :, :, chan_idx].T
 
     plt.imshow(rgb_frame, origin='lower')
     plt.title("Video frame 0")
