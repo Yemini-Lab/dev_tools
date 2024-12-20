@@ -91,36 +91,29 @@ def plot_activity(ax, nwb_obj):
     cmap = plt.cm.get_cmap('tab10', len(unique_stimuli))
     stimulus_colors = {label: cmap(i) for i, label in enumerate(unique_stimuli)}
 
-    # Turn off the original ax and use its position to place new axes
-    fig = ax.figure
+    # Turn off the original axis and use its SubplotSpec
     ax.set_axis_off()
-    pos = ax.get_position()
+    fig = ax.figure
+    main_spec = ax.get_subplotspec()
 
-    # Reserve a small portion at the top for the legend, e.g. 15% of height
-    legend_height = 0.15 * pos.height
-    plot_height = pos.height - legend_height
+    # Create a vertical layout: 4 rows x 1 column
+    # Row 0: Legend
+    # Rows 1-3: 3x3 grid of subplots
+    main_gs = main_spec.subgridspec(4, 1, height_ratios=[0.3, 1, 1, 1])
 
-    # Create legend axis at the top
-    legend_pos = [pos.x0, pos.y0 + plot_height, pos.width, legend_height]
-    legend_ax = fig.add_axes(legend_pos)
+    # Legend axis (just one subplot spanning the single column)
+    legend_ax = fig.add_subplot(main_gs[0, 0])
     legend_ax.axis('off')
 
-    # Create a 3x3 grid of axes below the legend
-    sub_ax_width = pos.width / 3
-    sub_ax_height = plot_height / 3
-    axs = []
-    for row in range(3):
-        for col in range(3):
-            # Note: 0th row at top, so we use (2-row) to invert vertical order
-            sub_ax_pos = [pos.x0 + col * sub_ax_width, pos.y0 + (2 - row) * sub_ax_height,
-                          sub_ax_width, sub_ax_height]
-            subax = fig.add_axes(sub_ax_pos)
-            axs.append(subax)
+    # Now create a sub-subgridspec for the 3x3 neuron plots
+    plot_gs = main_gs[1:, 0].subgridspec(3, 3)
 
-    # Plot each neuron
+    # Create the 3x3 subplots
+    axs = [fig.add_subplot(plot_gs[i // 3, i % 3]) for i in range(9)]
+
+    # Shade and plot each neuron
     for idx, neuron in enumerate(target_neurons):
         subax = axs[idx]
-
         # Shade background according to stimuli
         for i in range(len(stimulus_labels)):
             start = stimulus_timestamps[i]
@@ -150,28 +143,29 @@ def plot_activity(ax, nwb_obj):
 
         # Only label y-axis on left column
         if idx % 3 != 0:
-            subax.yaxis.set_ticklabels([])
             subax.set_ylabel('')
+            subax.yaxis.set_ticklabels([])
         else:
             subax.set_ylabel('Fluorescence', fontsize=6)
 
         # Only label x-axis on bottom row
         if idx < 6:
-            subax.xaxis.set_ticklabels([])
             subax.set_xlabel('')
+            subax.xaxis.set_ticklabels([])
         else:
             subax.set_xlabel('Frame', fontsize=6)
 
         subax.tick_params(axis='both', which='major', labelsize=6)
 
-    # Turn off axes for unused subplots if any
+    # Turn off axes for unused subplots
     for j in range(len(target_neurons), 9):
         axs[j].axis('off')
 
     # Create a legend for the stimuli in the legend_ax
     legend_handles = [mpatches.Patch(color=stimulus_colors[label], label=str(label)) for label in unique_stimuli]
     legend_ax.legend(handles=legend_handles, loc='center', ncol=len(unique_stimuli), fontsize=8)
-    fig.canvas.draw_idle()
+
+    fig.tight_layout()
 
 
 def generate_mip(nwb_obj):
