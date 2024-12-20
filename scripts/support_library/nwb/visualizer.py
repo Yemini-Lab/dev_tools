@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
@@ -229,8 +230,11 @@ def visualize(nwb_obj):
         return [im]
 
     ani = animation.FuncAnimation(fig, update, frames=num_frames, interval=100, blit=True)
-    filename = f"{nwb_obj.subject.subject_id}_{datetime.now().strftime('%Y%m%d')}.mp4"
     ff_writer = animation.FFMpegWriter(fps=10)
     plt.subplots_adjust(left=0.02, right=0.98, top=0.98, bottom=0.05, wspace=0.3, hspace=0.3)
+
+    os.makedirs("nwb_validation_results", exist_ok=True)
+    filename = os.path.join("nwb_validation_results",
+                            f"{nwb_obj.subject.subject_id}_{datetime.now().strftime('%Y%m%d')}.mp4")
     ani.save(filename=filename, writer=ff_writer)
     #plt.show()
