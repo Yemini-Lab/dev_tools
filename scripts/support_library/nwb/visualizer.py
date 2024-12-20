@@ -5,6 +5,7 @@ import matplotlib.patches as mpatches
 from matplotlib.patches import ConnectionPatch
 from .validation import validate
 from datetime import datetime
+import warnings
 
 
 def plot_subject_info(ax, nwb_obj):
@@ -24,12 +25,13 @@ def plot_subject_info(ax, nwb_obj):
     val_text = f"Validation tests {'PASSED' if valid else 'FAILED'}, results:\n{summary}"
 
     ax.text(0, 0.5, info_text, ha='left', va='center', fontsize=10, transform=ax.transAxes)
-    ax.text(1, 0.5, val_text, ha='right', va='center', fontsize=5, transform=ax.transAxes)
+    ax.text(1, 0.5, val_text, ha='right', va='center', fontsize=7, transform=ax.transAxes)
 
 
 def plot_worm(ax, nwb_obj):
     rgb_img = generate_mip(nwb_obj)
-    ax.imshow(rgb_img, origin='lower')
+    warnings.filterwarnings("ignore")
+    ax.imshow((rgb_img * 255).astype(np.uint16), origin='lower')
     ax.set_title(f"{nwb_obj.subject.subject_id} Colorstack", fontsize=10)
     ax.axis('off')
 
@@ -49,7 +51,7 @@ def plot_neurons(ax, nwb_obj):
         sorted_indices = np.argsort(target_positions[:, 1])
         target_positions = target_positions[sorted_indices]
         target_labels = target_labels[sorted_indices]
-    ax.imshow(rgb_img, origin='lower')
+    ax.imshow((rgb_img * 255).astype(np.uint16), origin='lower')
     ax.scatter(x_coords, y_coords, facecolors='none', edgecolors='w', s=20, alpha=0.6)
     if len(target_positions) > 0:
         label_x = x_coords.min() - 100
@@ -215,6 +217,7 @@ def visualize(nwb_obj):
     rgb_frame = np.zeros((max_projection.shape[2], max_projection.shape[1], 3), dtype=video_array.dtype)
     for i, chan_idx in enumerate([0, 1, 2]):
         rgb_frame[..., i] = max_projection[0, :, :, chan_idx].T
+    warnings.filterwarnings("ignore")
     im = ax_video.imshow(rgb_frame, origin='lower')
     ax_video.axis('off')
 
@@ -230,4 +233,4 @@ def visualize(nwb_obj):
     ff_writer = animation.FFMpegWriter(fps=10)
     plt.subplots_adjust(left=0.02, right=0.98, top=0.98, bottom=0.05, wspace=0.3, hspace=0.3)
     ani.save(filename=filename, writer=ff_writer)
-    plt.show()
+    #plt.show()
