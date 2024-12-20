@@ -91,18 +91,24 @@ def plot_activity(ax, nwb_obj):
     cmap = plt.cm.get_cmap('tab10', len(unique_stimuli))
     stimulus_colors = {label: cmap(i) for i, label in enumerate(unique_stimuli)}
 
-    # Create a 4x3 subgridspec: top row for legend, bottom 3x3 for activity
-    main_gs = ax.get_subplotspec().subgridspec(4, 3, height_ratios=[0.3, 1, 1, 1])
+    # Create a main 4x3 gridspec:
+    # First row for legend (height ratio small), next three rows for the 3x3 plots
+    main_spec = ax.get_subplotspec()
+    main_gs = main_spec.subgridspec(4, 3, height_ratios=[0.3, 1, 1, 1])
 
-    # For the top row (legend), create a 1x1 subgridspec to get a single subplot
+    # Create legend_gs by sub-slicing the first row to a single subplot
     legend_gs = main_gs[0, :].subgridspec(1, 1)
     legend_ax = ax.figure.add_subplot(legend_gs[0, 0])
 
-    # For the neuron plots, use the remaining 3 rows
-    plot_gs = main_gs[1:, :]
+    # The neuron plots will occupy a 3x3 area: rows 1:4, all columns
+    plot_gs = main_gs[1:4, :]
 
-    # Create the 3x3 axes for neuron activity
-    axs = [ax.figure.add_subplot(plot_gs[i // 3, i % 3]) for i in range(9)]
+    # Now plot_gs is a 3x3 GridSpecFromSubplotSpec
+    # Indexing plot_gs[row, col] returns a SubplotSpec
+    axs = []
+    for i in range(9):
+        row, col = divmod(i, 3)
+        axs.append(ax.figure.add_subplot(plot_gs[row, col]))
 
     # Shade and plot each neuron
     for idx, neuron in enumerate(target_neurons):
@@ -113,7 +119,7 @@ def plot_activity(ax, nwb_obj):
             if i < len(stimulus_labels) - 1:
                 end = stimulus_timestamps[i + 1]
             else:
-                end = num_frames  # last stimulus goes until the end
+                end = num_frames  # last stimulus goes until end
             subax.axvspan(start, end, facecolor=stimulus_colors[stimulus_labels[i]], alpha=0.1)
 
         if neuron in activity_dict:
@@ -149,7 +155,7 @@ def plot_activity(ax, nwb_obj):
 
         subax.tick_params(axis='both', which='major', labelsize=6)
 
-    # Turn off any unused axes if the target_neurons list is shorter than 9
+    # Turn off any unused axes if target_neurons < 9
     for j in range(len(target_neurons), 9):
         axs[j].axis('off')
 
