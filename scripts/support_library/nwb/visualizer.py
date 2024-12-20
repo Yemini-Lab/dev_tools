@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import matplotlib.patches as mpatches
 from matplotlib.patches import ConnectionPatch
-from validation import validate
+from .validation import validate
 from datetime import datetime
 
 
