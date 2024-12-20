@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import matplotlib.patches as mpatches
 from matplotlib.patches import ConnectionPatch
+from validation import validate
 from datetime import datetime
 
 
@@ -18,7 +19,12 @@ def plot_subject_info(ax, nwb_obj):
         info_text = "\n".join(subject_info)
     else:
         info_text = "No subject info available"
-    ax.text(0, 0.5, info_text, ha='left', va='center', fontsize=10)
+
+    valid, summary = validate(nwb_obj)
+    val_text = f"Validation: {'Passed' if valid else 'Failed'}\n{summary}"
+
+    ax.text(0, 0.5, info_text, ha='left', va='center', fontsize=10, transform=ax.transAxes)
+    ax.text(1, 0.5, val_text, ha='right', va='center', fontsize=10, transform=ax.transAxes)
 
 
 def plot_worm(ax, nwb_obj):
@@ -114,7 +120,7 @@ def plot_activity(ax, nwb_obj):
         # Shade background according to stimuli
         for i in range(len(stimulus_labels)):
             start = stimulus_timestamps[i]
-            end = stimulus_timestamps[i + 1] if i < len(stimulus_labels)-1 else num_frames
+            end = stimulus_timestamps[i + 1] if i < len(stimulus_labels) - 1 else num_frames
             subax.axvspan(start, end, facecolor=stimulus_colors[stimulus_labels[i]], alpha=0.4)
 
         if neuron in activity_dict:
@@ -158,7 +164,6 @@ def plot_activity(ax, nwb_obj):
     # Create a compact legend on the right with smaller font
     legend_handles = [mpatches.Patch(color=stimulus_colors[label], label=str(label)) for label in unique_stimuli]
     legend_ax.legend(handles=legend_handles, loc='center', ncol=1, fontsize=6)
-
 
 
 def generate_mip(nwb_obj):
@@ -217,7 +222,7 @@ def visualize(nwb_obj):
         for i, chan_idx in enumerate([0, 1, 2]):
             rgb_frame[..., i] = max_projection[frame_idx, :, :, chan_idx].T
         im.set_data(rgb_frame)
-        ax_video.set_title(f"Calcium Imaging Series (t={frame_idx+1})", fontsize=10)
+        ax_video.set_title(f"Calcium Imaging Series (t={frame_idx + 1})", fontsize=10)
         return [im]
 
     ani = animation.FuncAnimation(fig, update, frames=num_frames, interval=100, blit=True)
@@ -226,4 +231,3 @@ def visualize(nwb_obj):
     plt.subplots_adjust(left=0.02, right=0.98, top=0.98, bottom=0.05, wspace=0.3, hspace=0.3)
     ani.save(filename=filename, writer=ff_writer)
     plt.show()
-
