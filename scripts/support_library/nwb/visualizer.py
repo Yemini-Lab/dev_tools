@@ -82,26 +82,31 @@ def visualize_video(nwb_obj):
 
 def visualize_activity(nwb_obj):
     import matplotlib.pyplot as plt
+    import numpy as np
 
     target_neurons = ['AWAL', 'I2L', 'AVAL', 'AVBL', 'AWAR', 'I2R', 'AVAR', 'AVBR', 'VB2']
     activity_module = nwb_obj.processing['CalciumActivity']['ActivityTraces']
     activity_dict = {}
-    for n in range(len(activity_module.neuron)):
-        neuron_name = activity_module.neuron[n]
+    for n, neuron_name in enumerate(activity_module.neuron):
         if neuron_name in target_neurons:
             activity_dict[neuron_name] = activity_module.activity[n]
 
-    fig, axs = plt.subplots(len(target_neurons), 1, figsize=(6, 10))
-    if len(target_neurons) == 1:
-        axs = [axs]
+    # Compute global y-limits
+    if activity_dict:
+        all_vals = np.concatenate(list(activity_dict.values()))
+        ymin, ymax = np.min(all_vals), np.max(all_vals)
+    else:
+        ymin, ymax = 0, 1
+
+    fig, axs = plt.subplots(3, 3, figsize=(10, 10), sharex=True, sharey=True)
+    axs = axs.flatten()
 
     for i, neuron in enumerate(target_neurons):
         ax = axs[i]
         if neuron in activity_dict:
             ax.plot(activity_dict[neuron])
-            ax.set_title(f"{neuron}")
-            ax.set_xlabel("Frame")
-            ax.set_ylabel("Fluorescence")
+            ax.set_title(neuron)
+            ax.set_ylim(ymin, ymax)
         else:
             ax.set_facecolor("lightgrey")
             ax.text(0.5, 0.5, "No activity found",
@@ -111,6 +116,15 @@ def visualize_activity(nwb_obj):
             ax.set_yticks([])
             ax.set_title(f"{neuron} Activity")
 
-    plt.tight_layout()
+    # Remove unused subplots if any
+    for j in range(len(target_neurons), len(axs)):
+        axs[j].axis('off')
+
+    # Set shared labels
+    fig.text(0.5, 0.04, 'Frame', ha='center')
+    fig.text(0.04, 0.5, 'Fluorescence', va='center', rotation='vertical')
+
+    plt.tight_layout(rect=[0.06, 0.06, 1, 1])
     plt.show()
+
 
