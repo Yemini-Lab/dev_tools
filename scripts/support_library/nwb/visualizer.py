@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+from matplotlib.patches import ConnectionPatch
 
 
 def visualize_neurons(nwb_obj):
@@ -8,21 +9,45 @@ def visualize_neurons(nwb_obj):
     neurons = nwb_obj.processing['NeuroPAL']['NeuroPALSegmentation']['NeuroPALNeurons']
 
     neuron_positions = np.array(neurons.voxel_mask[:].tolist())
-    neuron_labels = neurons.ID_labels
+    neuron_labels = np.array(neurons.ID_labels)
+    rgb_img = generate_mip(nwb_obj)
+
+    # Extract coordinates
     x_coords = neuron_positions[:, 0]
     y_coords = neuron_positions[:, 1]
 
-    rgb_img = generate_mip(nwb_obj)
+    # Filter for target neurons
+    mask = np.isin(neuron_labels, target_neurons)
+    target_positions = neuron_positions[mask]
+    target_labels = neuron_labels[mask]
+
+    # Sort targets by y coordinate
+    sorted_indices = np.argsort(target_positions[:, 1])
+    target_positions = target_positions[sorted_indices]
+    target_labels = target_labels[sorted_indices]
 
     plt.imshow(rgb_img, origin='lower')
+
+    # Plot all neurons
     plt.scatter(x_coords, y_coords, facecolors='none', edgecolors='w', s=20, alpha=0.5)
 
-    label_x = x_coords.min() - 50
-    for i, label in enumerate(neuron_labels):
-        if label in target_neurons:
-            plt.text(label_x, y_coords[i], label, color='white', fontsize=8,
-                     bbox=dict(facecolor='black', alpha=0.3), ha='right', va='center')
-            plt.plot([label_x, x_coords[i]], [y_coords[i], y_coords[i]], color='yellow', linewidth=1)
+    # Determine left label column x position
+    label_x = x_coords.min() - 100
+    # Evenly space labels vertically
+    label_ys = np.linspace(target_positions[0, 1], target_positions[-1, 1], len(target_positions))
+
+    # Draw labels and connecting lines
+    for (tx, ty), lbl, ly in zip(target_positions, target_labels, label_ys):
+        # Label on the left
+        plt.text(label_x, ly, lbl, color='white', fontsize=8,
+                 bbox=dict(facecolor='black', alpha=0.3),
+                 ha='right', va='center')
+
+        # Use a curved connection line
+        con = ConnectionPatch(xyA=(label_x, ly), xyB=(tx, ty),
+                              coordsA='data', coordsB='data',
+                              arrowstyle='-', color='yellow', linewidth=1)
+        plt.gca().add_artist(con)
 
     plt.title(f"{nwb_obj.subject.subject_id} Neurons ({len(neuron_labels)})")
     plt.axis('off')
