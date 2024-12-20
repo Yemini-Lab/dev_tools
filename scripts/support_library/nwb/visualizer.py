@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+import matplotlib.patches as mpatches
 from matplotlib.patches import ConnectionPatch
 from datetime import datetime
 
@@ -76,23 +77,70 @@ def plot_activity(ax, nwb_obj):
         all_vals = np.concatenate(activity_values)
         all_vals = [x for x in all_vals if not np.isnan(x)]
         ymin, ymax = 0, np.max(all_vals)
+        num_frames = max(len(a) for a in activity_values)
     else:
         ymin, ymax = 0, 1
+        num_frames = 1  # fallback if no data
 
+    # Get stimulus info
+    stimulus_labels = nwb_obj.processing['CalciumActivity']['StimulusInfo'].data[:]
+    stimulus_timestamps = nwb_obj.processing['CalciumActivity']['StimulusInfo'].timestamps[:]
+
+    # Ensure we have a closing interval for the last stimulus,
+    # if not, assume it lasts until the end of the recording (num_frames).
+    if len(stimulus_timestamps) == len(stimulus_labels):
+        # If we don't have a defined end for the last stimulus period,
+        # we treat the last timestamp as the start of the last period.
+        # The end is num_frames - 1 if stimulus_timestamps are frame indices.
+        pass
+    else:
+        # If there's a mismatch, handle gracefully or raise error.
+        # For simplicity, assume they match in length.
+        pass
+
+    # Identify unique stimuli and assign colors
+    unique_stimuli = np.unique(stimulus_labels)
+    cmap = plt.cm.get_cmap('tab10', len(unique_stimuli))
+    stimulus_colors = {label: cmap(i) for i, label in enumerate(unique_stimuli)}
+
+    # Prepare the figure and axes
     ax.set_axis_off()
     gs = ax.get_subplotspec().subgridspec(3, 3)
     axs = [ax.figure.add_subplot(gs[i // 3, i % 3]) for i in range(9)]
+
+    # Plot each neuron's activity
     for idx, neuron in enumerate(target_neurons):
         subax = axs[idx]
+
+        # Shade background according to stimuli
+        # We assume stimulus_timestamps are frame indices indicating when stimulus changes.
+        # The intervals are [stimulus_timestamps[i], stimulus_timestamps[i+1]) for each i.
+        # For the last stimulus, if no closing timestamp is provided, we go until num_frames.
+        for i in range(len(stimulus_labels)):
+            start = stimulus_timestamps[i]
+            if i < len(stimulus_labels) - 1:
+                end = stimulus_timestamps[i + 1]
+            else:
+                end = num_frames  # last stimulus period goes until the end
+
+            subax.axvspan(start, end, facecolor=stimulus_colors[stimulus_labels[i]], alpha=0.1)
+
         if neuron in activity_dict:
             fluo = activity_dict[neuron]
             subax.plot(fluo, linewidth=0.5, c='r')
-            subax.set_ylim(ymin, np.max([x for x in fluo if not np.isnan(x)]) + 5)
+            valid_fluo = [x for x in fluo if not np.isnan(x)]
+            if valid_fluo:
+                subax.set_ylim(ymin, np.max(valid_fluo) + 5)
+            else:
+                subax.set_ylim(ymin, ymax)
         else:
+            # No activity found for this neuron
             subax.set_facecolor("lightgrey")
             subax.text(0.5, 0.5, "No activity found",
                        horizontalalignment='center', verticalalignment='center',
                        transform=subax.transAxes, color='black', fontsize=6)
+            subax.set_ylim(ymin, ymax)
+
         subax.set_title(neuron, fontsize=8)
         # Only label y-axis on left column
         if idx % 3 != 0:
@@ -110,8 +158,17 @@ def plot_activity(ax, nwb_obj):
 
         subax.tick_params(axis='both', which='major', labelsize=6)
 
+    # Turn off remaining axes if any
     for j in range(len(target_neurons), 9):
         axs[j].axis('off')
+
+    # Create a legend for the stimuli at the top of the figure
+    legend_handles = [mpatches.Patch(color=stimulus_colors[label], label=str(label)) for label in unique_stimuli]
+    ax.figure.legend(handles=legend_handles, loc='upper center', bbox_to_anchor=(0.5, 1.05), ncol=len(unique_stimuli),
+                     fontsize=8)
+
+    # Adjust layout to make space for legend
+    plt.tight_layout(rect=[0, 0, 1, 0.95])
 
 
 def generate_mip(nwb_obj):
