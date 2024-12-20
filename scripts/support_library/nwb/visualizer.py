@@ -93,8 +93,10 @@ def visualize_activity(nwb_obj):
 
     # Compute global y-limits
     if activity_dict:
-        all_vals = np.concatenate(list(activity_dict.values()))
-        ymin, ymax = np.min(all_vals), np.max(all_vals)
+        activity_values = list(activity_dict.values())
+        all_vals = np.concatenate(activity_values)
+        all_vals = [x for x in all_vals if not np.isnan(x)]
+        ymin, ymax = 0, np.max(all_vals)
     else:
         ymin, ymax = 0, 1
 
