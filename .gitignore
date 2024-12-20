@@ -13,3 +13,4 @@
 utilities/.env
 *.asv
 rotation_debug.mat
+/.idea
