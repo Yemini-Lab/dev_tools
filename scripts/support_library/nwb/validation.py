@@ -103,4 +103,10 @@ def validate(nwb_obj):
     if len(processing_issues) > 0:
         issue_list.append(processing_issues)
 
-    return len(issue_list) == 0
+    is_valid = len(issue_list) == 0
+    if is_valid:
+        summary = "No issues detected, passed all validation tests."
+    else:
+        summary = '\n '.join(issue_list)
+
+    return is_valid, summary
