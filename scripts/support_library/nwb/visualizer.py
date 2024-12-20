@@ -5,6 +5,7 @@ def visualize_worm(nwb_obj):
     # Dimensions: (c, z, x, y)
     color_stack = nwb_obj.acquisition['NeuroPALImageRaw'].data[:]
     rgbw_indices = nwb_obj.acquisition['NeuroPALImageRaw'].RGBW_channels[:]
+    channel_gammas = nwb_obj.processing['NeuroPAL']['NeuroPAL_ID'].gammas[:]  # Gamma for each channel
 
     if color_stack.ndim < 4:
         print("Data format not as expected.")
