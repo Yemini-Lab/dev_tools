@@ -24,7 +24,7 @@ def visualize_neurons(nwb_obj):
             plt.text(x_coords[i]+5, y_coords[i]+5, label, color='white', fontsize=8,
                      bbox=dict(facecolor='black', alpha=0.3))
 
-    plt.title(f"Neurons: {nwb_obj.subject.subject_id}")
+    plt.title(f"{nwb_obj.subject.subject_id} Neurons ({len(neuron_labels)})")
     plt.axis('off')
     plt.show()
 
