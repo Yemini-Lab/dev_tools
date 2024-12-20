@@ -9,20 +9,20 @@ def visualize_neurons(nwb_obj):
 
     neuron_positions = np.array(neurons.voxel_mask[:].tolist())
     neuron_labels = neurons.ID_labels
-
-    # Extract x and y (ignoring z and the last dimension)
     x_coords = neuron_positions[:, 0]
     y_coords = neuron_positions[:, 1]
 
     rgb_img = generate_mip(nwb_obj)
 
-    plt.imshow(rgb_img, origin='lower', alpha=0.8)
+    plt.imshow(rgb_img, origin='lower')
     plt.scatter(x_coords, y_coords, facecolors='none', edgecolors='w', s=20, alpha=0.5)
 
+    label_x = x_coords.min() - 50
     for i, label in enumerate(neuron_labels):
         if label in target_neurons:
-            plt.text(x_coords[i]+5, y_coords[i]+5, label, color='white', fontsize=8,
-                     bbox=dict(facecolor='black', alpha=0.3))
+            plt.text(label_x, y_coords[i], label, color='white', fontsize=8,
+                     bbox=dict(facecolor='black', alpha=0.3), ha='right', va='center')
+            plt.plot([label_x, x_coords[i]], [y_coords[i], y_coords[i]], color='yellow', linewidth=1)
 
     plt.title(f"{nwb_obj.subject.subject_id} Neurons ({len(neuron_labels)})")
     plt.axis('off')
