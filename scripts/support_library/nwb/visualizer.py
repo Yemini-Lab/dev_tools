@@ -21,10 +21,10 @@ def plot_subject_info(ax, nwb_obj):
         info_text = "No subject info available"
 
     valid, summary = validate(nwb_obj)
-    val_text = f"Validation: {'Passed' if valid else 'Failed'}\n{summary}"
+    val_text = f"Validation tests {'PASSED' if valid else 'FAILED'}, results:\n{summary}"
 
     ax.text(0, 0.5, info_text, ha='left', va='center', fontsize=10, transform=ax.transAxes)
-    ax.text(1, 0.5, val_text, ha='right', va='center', fontsize=10, transform=ax.transAxes)
+    ax.text(1, 0.5, val_text, ha='right', va='center', fontsize=5, transform=ax.transAxes)
 
 
 def plot_worm(ax, nwb_obj):
