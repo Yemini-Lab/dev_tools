@@ -6,32 +6,23 @@ import matplotlib.animation as animation
 def visualize_neurons(nwb_obj):
     target_neurons = ['AWAL', 'I2L', 'AVAL', 'AVBL', 'AWAR', 'I2R', 'AVAR', 'AVBR', 'VB2']
     neurons = nwb_obj.processing['NeuroPAL']['NeuroPALSegmentation']['NeuroPALNeurons']
-    neuron_positions = np.asarray(neurons.voxel_mask)  # ensure it's a NumPy array
+
+    neuron_positions = neurons.voxel_mask  # Assume shape: (n_neurons, 4) with last dim ignored
     neuron_labels = neurons.ID_labels
 
-    coords = []
-    for i in range(neuron_labels.shape[0]):
-        # Use a condition to ensure a boolean array
-        inds = np.argwhere(neuron_positions[..., i] > 0)
-        if inds.size == 0:
-            coords.append((np.nan, np.nan))
-        else:
-            mean_pos = inds.mean(axis=0)
-            # mean_pos = [x_mean, y_mean, z_mean], so reorder for (y, x)
-            coords.append((mean_pos[1], mean_pos[0]))
+    # Extract x and y (ignoring z and the last dimension)
+    x_coords = neuron_positions[:, 0]
+    y_coords = neuron_positions[:, 1]
 
-    coords = np.array(coords)
     rgb_img = generate_mip(nwb_obj)
 
     plt.imshow(rgb_img, origin='lower', alpha=0.5)
-    plt.scatter(coords[:, 0], coords[:, 1], c='red', s=10)
+    plt.scatter(x_coords, y_coords, c='red', s=10)
 
     for i, label in enumerate(neuron_labels):
         if label in target_neurons:
-            x, y = coords[i]
-            if not np.isnan(x) and not np.isnan(y):
-                plt.text(x+5, y+5, label, color='white', fontsize=8,
-                         bbox=dict(facecolor='black', alpha=0.5))
+            plt.text(x_coords[i]+5, y_coords[i]+5, label, color='white', fontsize=8,
+                     bbox=dict(facecolor='black', alpha=0.5))
 
     plt.title(f"Neurons: {nwb_obj.subject.subject_id}")
     plt.axis('off')
