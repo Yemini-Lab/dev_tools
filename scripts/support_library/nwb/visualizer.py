@@ -4,7 +4,7 @@ import numpy as np
 
 def visualize_worm(nwb_obj):
     color_stack = nwb_obj.acquisition['NeuroPALImageRaw'].data[:]
-    rgbw_indices = nwb_obj.acquisition['NeuroPALImageRaw'].RGBW_channels[:]
+    rgbw_indices = nwb_obj.acquisition['NeuroPALImageRaw'].RGBW_channels[:] - 1
     channel_gammas = nwb_obj.processing['NeuroPAL']['NeuroPAL_ID'].gammas[:]
 
     if color_stack.ndim < 4:
