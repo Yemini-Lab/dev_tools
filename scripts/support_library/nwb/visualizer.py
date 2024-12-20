@@ -1,28 +1,41 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+
 def visualize_worm(nwb_obj):
-    # Dimensions: (c, z, x, y)
     color_stack = nwb_obj.acquisition['NeuroPALImageRaw'].data[:]
     rgbw_indices = nwb_obj.acquisition['NeuroPALImageRaw'].RGBW_channels[:]
-    channel_gammas = nwb_obj.processing['NeuroPAL']['NeuroPAL_ID'].gammas[:]  # Gamma for each channel
+    channel_gammas = nwb_obj.processing['NeuroPAL']['NeuroPAL_ID'].gammas[:]
 
     if color_stack.ndim < 4:
         print("Data format not as expected.")
         return
 
-    # Perform max intensity projection over z
-    max_img = color_stack.max(axis=1)  # now (c, x, y)
+    # Max intensity projection over z
+    max_img = color_stack.max(axis=1)  # shape: (c, x, y)
 
-    # Create an RGB image with dimensions (y, x, 3)
     rgb_img = np.zeros((max_img.shape[2], max_img.shape[1], 3), dtype=max_img.dtype)
     for i, chan_idx in enumerate(rgbw_indices[:3]):
-        # Transpose to (y, x)
-        rgb_img[..., i] = max_img[chan_idx, ...].T
+        gamma = channel_gammas[chan_idx]
+        corrected = np.power(max_img[chan_idx, ...], 1 / gamma)
+        rgb_img[..., i] = corrected.T
 
     plt.imshow(rgb_img, origin='lower')
     plt.title(f"Worm visualization: {nwb_obj.subject.subject_id}")
     plt.axis('off')
+
+    # Add subject info to the right of the image
+    subject_info = []
+    if getattr(nwb_obj, 'subject', None) is not None:
+        for attr in ['subject_id', 'age', 'description', 'genotype', 'sex', 'species', 'strain']:
+            val = getattr(nwb_obj.subject, attr, None)
+            if val is not None:
+                subject_info.append(f"{attr.capitalize()}: {val}")
+
+    if subject_info:
+        plt.text(1.05, 0.5, "\n".join(subject_info), transform=plt.gca().transAxes,
+                 verticalalignment='center', fontsize=10)
+
     plt.show()
 
 
