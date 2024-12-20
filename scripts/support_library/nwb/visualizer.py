@@ -26,29 +26,28 @@ def visualize_neurons(nwb_obj):
     target_positions = target_positions[sorted_indices]
     target_labels = target_labels[sorted_indices]
 
-    plt.imshow(rgb_img, origin='lower', alpha=0.8)
-    plt.scatter(x_coords, y_coords, facecolors='none', edgecolors='w', s=20, alpha=0.5)
+    plt.imshow(rgb_img, origin='lower')
+    plt.scatter(x_coords, y_coords, facecolors='none', edgecolors='w', s=20, alpha=0.6)
 
     # Determine left label column x position
     label_x = x_coords.min() - 100
 
     # Evenly space labels vertically
     diff = target_positions[-1, 1] - target_positions[0, 1]
-    expanded_diff = diff * 2  # Increase spacing by factor of 2
+    expanded_diff = diff * 2.5  # Increase spacing by factor of 2
     label_ys = np.linspace(target_positions[0, 1], target_positions[0, 1] + expanded_diff, len(target_positions))
 
     # Draw labels and connecting lines
+    vertical_offset = -135
     for i in range(len(target_positions)):
         tx, ty = target_positions[i]
         lbl = target_labels[i]
-        ly = label_ys[i]
+        ly = label_ys[i] + vertical_offset
 
-        plt.text(label_x, ly, lbl, color='white', fontsize=8,
-                 bbox=dict(facecolor='black', alpha=0.3),
-                 ha='right', va='center')
+        plt.text(label_x, ly, lbl, color='white', fontsize=8, ha='right', va='center')
         con = ConnectionPatch(xyA=(label_x, ly), xyB=(tx, ty),
                               coordsA='data', coordsB='data',
-                              arrowstyle='-', color='yellow', linewidth=1)
+                              arrowstyle='-', color='yellow', linewidth=0.4, alpha=1)
         plt.gca().add_artist(con)
 
     plt.title(f"{nwb_obj.subject.subject_id} Neurons ({len(neuron_labels)})")
