@@ -1,4 +1,7 @@
 import math
+import pynwb.misc
+import pynwb.ophys
+import hdmf.common.table
 
 
 def validate_subject(nwb_obj):
@@ -62,17 +65,17 @@ def validate_processed(nwb_obj):
             issue_list.append(f"{module_name} has unexpected data interfaces: {data_interfaces}")
 
         for interface_name, each_child in processing_module.data_interfaces.items():
-            if isinstance(each_child, DynamicTable):
+            if isinstance(each_child, hdmf.common.table.DynamicTable):
                 if "Activity" in each_child.colnames:
                     activity_column = each_child["Activity"]  # Access the column properly
                     if any(math.isnan(val) for val in activity_column.data):
                         issue_list.append(f"{module_name} {interface_name} contains NaN values in Activity column")
 
-            elif isinstance(each_child, AnnotationSeries):
+            elif isinstance(each_child, pynwb.misc.AnnotationSeries):
                 if each_child.data.shape != each_child.timestamps.shape:
                     issue_list.append(f"{module_name} {interface_name} data/timestamp dim mismatch")
 
-            elif isinstance(each_child, ImageSegmentation):
+            elif isinstance(each_child, pynwb.ophys.ImageSegmentation):
                 if each_child.name == 'TrackedNeurons':
                     tracked_rois = each_child['TrackedNeuronROIs'].voxel_mask
                     if tracked_rois.ndim < 3:
