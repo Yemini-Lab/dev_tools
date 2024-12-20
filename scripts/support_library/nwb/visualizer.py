@@ -1,5 +1,6 @@
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 
 
 def visualize_worm(nwb_obj):
@@ -54,15 +55,23 @@ def visualize_video(nwb_obj):
     max_projection = video_array.max(axis=3)  # (t, x, y, c)
     num_frames = min(25, max_projection.shape[0])
 
-    for frame_idx in range(num_frames):
-        rgb_frame = np.zeros((max_projection.shape[2], max_projection.shape[1], 3), dtype=video_array.dtype)
+    fig, ax = plt.subplots()
+    rgb_frame = np.zeros((max_projection.shape[2], max_projection.shape[1], 3), dtype=video_array.dtype)
+    for i, chan_idx in enumerate([0, 1, 2]):
+        rgb_frame[..., i] = max_projection[0, :, :, chan_idx].T
+
+    im = ax.imshow(rgb_frame, origin='lower')
+    ax.axis('off')
+
+    def update(frame_idx):
         for i, chan_idx in enumerate([0, 1, 2]):
             rgb_frame[..., i] = max_projection[frame_idx, :, :, chan_idx].T
+        im.set_data(rgb_frame)
+        ax.set_title(f"Frame {frame_idx}", loc='left')
+        return [im]
 
-        plt.imshow(rgb_frame, origin='lower')
-        plt.title(f"Frame {frame_idx}", loc='left')
-        plt.axis('off')
-        plt.show()
+    ani = animation.FuncAnimation(fig, update, frames=num_frames, interval=100, blit=True)
+    plt.show()
 
 
 def visualize_activity(nwb_obj):
