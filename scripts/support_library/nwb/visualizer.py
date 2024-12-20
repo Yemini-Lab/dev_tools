@@ -7,7 +7,7 @@ def visualize_neurons(nwb_obj):
     target_neurons = ['AWAL', 'I2L', 'AVAL', 'AVBL', 'AWAR', 'I2R', 'AVAR', 'AVBR', 'VB2']
     neurons = nwb_obj.processing['NeuroPAL']['NeuroPALSegmentation']['NeuroPALNeurons']
 
-    neuron_positions = neurons.voxel_mask  # Assume shape: (n_neurons, 4) with last dim ignored
+    neuron_positions = np.array(neurons.voxel_mask[:].tolist())
     neuron_labels = neurons.ID_labels
 
     # Extract x and y (ignoring z and the last dimension)
@@ -16,13 +16,13 @@ def visualize_neurons(nwb_obj):
 
     rgb_img = generate_mip(nwb_obj)
 
-    plt.imshow(rgb_img, origin='lower', alpha=0.5)
-    plt.scatter(x_coords, y_coords, c='red', s=10)
+    plt.imshow(rgb_img, origin='lower', alpha=0.8)
+    plt.scatter(x_coords, y_coords, facecolors='none', edgecolors='w', s=20, alpha=0.5)
 
     for i, label in enumerate(neuron_labels):
         if label in target_neurons:
             plt.text(x_coords[i]+5, y_coords[i]+5, label, color='white', fontsize=8,
-                     bbox=dict(facecolor='black', alpha=0.5))
+                     bbox=dict(facecolor='black', alpha=0.3))
 
     plt.title(f"Neurons: {nwb_obj.subject.subject_id}")
     plt.axis('off')
