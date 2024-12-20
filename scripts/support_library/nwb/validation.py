@@ -13,12 +13,18 @@ def validate_subject(nwb_obj):
     issue_list = []
 
     if nwb_obj.subject.sex not in expected_sexes:
-        issue_list.append('subject sex')
+        issue_list.append('Sex: invalid')
 
     if nwb_obj.subject.species != expected_species:
-        issue_list.append('subject species')
+        issue_list.append('Species: invalid')
 
-    return issue_list
+    if nwb_obj.subject.strain == "[]":
+        issue_list.append('Strain: not specified')
+
+    if not issue_list:
+        return ["Subject: PASSED"]
+    else:
+        return issue_list
 
 
 def validate_acquisitions(nwb_obj):
@@ -46,15 +52,18 @@ def validate_acquisitions(nwb_obj):
                     or any(each_channel.excitation_range[:] == [0, 0])
                     or each_channel.excitation_lambda == 0
             ):
-                issue_list.append(f"{each_acquisition_module} channel: {each_channel.name}")
+                issue_list.append(f"{each_acquisition_module}: channel {each_channel.name} contains filler info")
 
-    return issue_list
+    if not issue_list:
+        return ["Acquisitions: PASSED"]
+    else:
+        return issue_list
 
 
 def validate_processed(nwb_obj):
     expected_keys = ['CalciumActivity', 'NeuroPAL']
-    expected_calcium_data = ['ActivityTraces', 'StimulusInfo', 'TrackedNeurons']
-    expected_neuropal_data = ['NeuroPALSegmentation', 'NeuroPAL_ID', 'TrackedNeurons']
+    expected_calcium_data = ['StimulusInfo', 'TrackedNeurons', 'ActivityTraces']
+    expected_neuropal_data = ['NeuroPALSegmentation', 'TrackedNeurons', 'NeuroPAL_ID']
 
     issue_list = []
 
@@ -90,7 +99,10 @@ def validate_processed(nwb_obj):
             else:
                 issue_list.append(f"{module_name} unexpected child class: {type(each_child).__name__}")
 
-    return issue_list
+    if not issue_list:
+        return [".processing Modules: PASSED"]
+    else:
+        return issue_list
 
 
 def validate(nwb_obj):
@@ -109,9 +121,6 @@ def validate(nwb_obj):
         issue_list += processing_issues
 
     is_valid = len(issue_list) == 0
-    if is_valid:
-        summary = "No issues detected, passed all validation tests."
-    else:
-        summary = '\n '.join(issue_list)
+    summary = '\n '.join(issue_list)
 
     return is_valid, summary
