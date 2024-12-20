@@ -53,61 +53,36 @@ def validate_processed(nwb_obj):
 
     issue_list = []
 
-    processing_modules = list(nwb_obj.processing.keys())
-    for each_processing_module in processing_modules:
-        if each_processing_module.name not in expected_keys:
-            issue_list.append('processing keys')
+    for module_name, processing_module in nwb_obj.processing.items():
+        if module_name not in expected_keys:
+            issue_list.append(f"Unexpected processing key: {module_name}")
 
-        each_data_interface = list(each_processing_module.data_interfaces.keys())
-        if (
-                each_data_interface != expected_calcium_data
-                or each_data_interface != expected_neuropal_data
-        ):
-            issue_list.append(f"{each_processing_module} data interface: {each_data_interface.name}")
+        data_interfaces = list(processing_module.data_interfaces.keys())
+        if data_interfaces not in [expected_calcium_data, expected_neuropal_data]:
+            issue_list.append(f"{module_name} has unexpected data interfaces: {data_interfaces}")
 
-        for each_child in each_data_interface:
-            match each_child.__class__.__name__:
-                case 'DynamicTable':
-                    for each_column in each_child.colnames:
-                        if each_column.name == "Activity":
-                            if math.isnan(each_column[:]):
-                                issue_list.append(f"{each_processing_module} {each_child.name} contains nan values")
+        for interface_name, each_child in processing_module.data_interfaces.items():
+            if isinstance(each_child, DynamicTable):
+                if "Activity" in each_child.colnames:
+                    activity_column = each_child["Activity"]  # Access the column properly
+                    if any(math.isnan(val) for val in activity_column.data):
+                        issue_list.append(f"{module_name} {interface_name} contains NaN values in Activity column")
 
-                case 'AnnotationSeries':
-                    if each_child.data.shape != each_child.timestamps.shape:
-                        issue_list.append(f"{each_processing_module} {each_child.name} data/timestamp dim mismatch")
+            elif isinstance(each_child, AnnotationSeries):
+                if each_child.data.shape != each_child.timestamps.shape:
+                    issue_list.append(f"{module_name} {interface_name} data/timestamp dim mismatch")
 
-                case 'ImageSegmentation':
-                    if each_child.name == 'TrackedNeurons':
-                        tracked_rois = each_child['TrackedNeuronROIs'].voxel_mask
-                        if len(tracked_rois.shape) < 2:
-                            issue_list.append(
-                                f"{each_processing_module} {each_child.name} video rois compressed along time dimension")
+            elif isinstance(each_child, ImageSegmentation):
+                if each_child.name == 'TrackedNeurons':
+                    tracked_rois = each_child['TrackedNeuronROIs'].voxel_mask
+                    if tracked_rois.ndim < 3:
+                        issue_list.append(f"{module_name} {interface_name} ROI compressed along time dimension")
 
-                        non_zero = [0, 0, 0]
-                        for roi in tracked_rois[:]:
-                            if roi[0] != 0:
-                                non_zero[0] = 1
+                    non_zero = (tracked_rois > 0).any(axis=(0, 1))
+                    if not all(non_zero):
+                        issue_list.append(f"{module_name} {interface_name} ROI has all-zero slices along dimensions")
 
-                            if roi[1] != 0:
-                                non_zero[1] = 1
-
-                            if roi[2] != 0:
-                                non_zero[2] = 1
-
-                        if non_zero[0] != 1:
-                            issue_list.append(
-                                f"{each_processing_module} {each_child.name} video rois all zero along first dim (x?)")
-
-                        if non_zero[1] != 1:
-                            issue_list.append(
-                                f"{each_processing_module} {each_child.name} video rois all zero along second dim (y?)")
-
-                        if non_zero[2] != 1:
-                            issue_list.append(
-                                f"{each_processing_module} {each_child.name} video rois all zero along third dim (z?)")
-
-                case _:
-                    issue_list.append(f"{each_processing_module} unexpected child class: {each_child.name}")
+            else:
+                issue_list.append(f"{module_name} unexpected child class: {type(each_child).__name__}")
 
     return issue_list
