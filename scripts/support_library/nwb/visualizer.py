@@ -23,7 +23,7 @@ def plot_subject_info(ax, nwb_obj):
 def plot_worm(ax, nwb_obj):
     rgb_img = generate_mip(nwb_obj)
     ax.imshow(rgb_img, origin='lower')
-    ax.set_title(f"Worm visualization: {nwb_obj.subject.subject_id}", fontsize=10)
+    ax.set_title(f"{nwb_obj.subject.subject_id} Colorstack", fontsize=10)
     ax.axis('off')
 
 
@@ -138,33 +138,26 @@ def visualize(nwb_obj):
     fig = plt.figure(figsize=(10, 10))
     gs = fig.add_gridspec(3, 2, height_ratios=[0.5, 3, 3], width_ratios=[3, 3])
 
-    # Subject info top row (spans both columns)
     ax_info = fig.add_subplot(gs[0, :])
     plot_subject_info(ax_info, nwb_obj)
 
-    # Worm (color stack) top-left
     ax_worm = fig.add_subplot(gs[1, 0])
     plot_worm(ax_worm, nwb_obj)
 
-    # Neurons top-right
     ax_neurons = fig.add_subplot(gs[1, 1])
     plot_neurons(ax_neurons, nwb_obj)
 
-    # Video bottom-left
     ax_video = fig.add_subplot(gs[2, 0])
-    ax_video.set_title("Calcium Imaging Series (t=1 to t=75)", fontsize=10)
-
-    # Activity bottom-right
     ax_activity = fig.add_subplot(gs[2, 1])
     plot_activity(ax_activity, nwb_obj)
 
-    # Setup the video animation
     video_array = nwb_obj.acquisition['CalciumImageSeries'].data[1:75, :, :, :, :]
     if video_array.ndim < 5:
         print("Data format not as expected.")
         plt.tight_layout()
         plt.show()
         return
+
     max_projection = video_array.max(axis=3)
     num_frames = min(75, max_projection.shape[0])
     rgb_frame = np.zeros((max_projection.shape[2], max_projection.shape[1], 3), dtype=video_array.dtype)
@@ -177,12 +170,13 @@ def visualize(nwb_obj):
         for i, chan_idx in enumerate([0, 1, 2]):
             rgb_frame[..., i] = max_projection[frame_idx, :, :, chan_idx].T
         im.set_data(rgb_frame)
+        ax_video.set_title(f"Calcium Imaging Series (t={frame_idx+1})", fontsize=10)
         return [im]
 
     ani = animation.FuncAnimation(fig, update, frames=num_frames, interval=100, blit=True)
     filename = f"{nwb_obj.subject.subject_id}_{datetime.now().strftime('%Y%m%d')}.mp4"
     ff_writer = animation.FFMpegWriter(fps=10)
-    # Reduce padding around figure
     plt.subplots_adjust(left=0.02, right=0.98, top=0.98, bottom=0.05, wspace=0.3, hspace=0.3)
     ani.save(filename=filename, writer=ff_writer)
     plt.show()
+
