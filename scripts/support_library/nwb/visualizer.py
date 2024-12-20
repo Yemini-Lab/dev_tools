@@ -3,7 +3,20 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 
-def visualize_worm(nwb_obj):
+def visualize_neurons(nwb_obj):
+    neurons = nwb_obj.processing['NeuroPAL']['NeuroPALSegmentation']['NeuroPALNeurons']
+    neuron_positions = neurons.voxel_mask  # [x, y, z, w] (ignore fourth dim)
+    neuron_labels = neurons.ID_labels
+
+    rgb_img = generate_mip(nwb_obj)
+
+
+def visualize_track(nwb_obj):
+    neurons = nwb_obj.processing['CalciumActivity']['TrackedNeurons']['TrackedNeuronROIs']
+    neuron_positions = neurons.voxel_mask  # [x, y, z, t]
+    neuron_labels = neurons.TrackedNeuronIDs
+
+def generate_mip(nwb_obj):
     color_stack = nwb_obj.acquisition['NeuroPALImageRaw'].data[:]
     rgbw_indices = nwb_obj.acquisition['NeuroPALImageRaw'].RGBW_channels[:] - 1
     channel_gammas = nwb_obj.processing['NeuroPAL']['NeuroPAL_ID'].gammas[:]
@@ -28,6 +41,11 @@ def visualize_worm(nwb_obj):
         channel_data *= max_val
         rgb_img[..., i] = channel_data.T
 
+    return rgb_img
+
+
+def visualize_worm(nwb_obj):
+    rgb_img = generate_mip(nwb_obj)
     plt.imshow(rgb_img, origin='lower')
     plt.title(f"Worm visualization: {nwb_obj.subject.subject_id}")
     plt.axis('off')
@@ -128,5 +146,3 @@ def visualize_activity(nwb_obj):
 
     plt.tight_layout(rect=[0.06, 0.06, 1, 1])
     plt.show()
-
-
