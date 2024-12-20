@@ -46,27 +46,23 @@ def visualize_worm(nwb_obj):
 
 
 def visualize_video(nwb_obj):
-    # Dimensions: (t, x, y, z, c)
     video_array = nwb_obj.acquisition['CalciumImageSeries'].data[:]
-
     if video_array.ndim < 5:
         print("Data format not as expected.")
         return
 
-    # Max intensity projection over z
     max_projection = video_array.max(axis=3)  # (t, x, y, c)
+    num_frames = min(25, max_projection.shape[0])
 
-    frame_idx = 0
-    # Create an RGB frame: (y, x, 3)
-    rgb_frame = np.zeros((max_projection.shape[2], max_projection.shape[1], 3), dtype=video_array.dtype)
-    for i, chan_idx in enumerate([1, 2, 3]):
-        # Transpose to (y, x)
-        rgb_frame[..., i] = max_projection[frame_idx, :, :, chan_idx].T
+    for frame_idx in range(num_frames):
+        rgb_frame = np.zeros((max_projection.shape[2], max_projection.shape[1], 3), dtype=video_array.dtype)
+        for i, chan_idx in enumerate([1, 2, 3]):
+            rgb_frame[..., i] = max_projection[frame_idx, :, :, chan_idx].T
 
-    plt.imshow(rgb_frame, origin='lower')
-    plt.title("Video frame 0")
-    plt.axis('off')
-    plt.show()
+        plt.imshow(rgb_frame, origin='lower')
+        plt.title(f"Frame {frame_idx}", loc='left')
+        plt.axis('off')
+        plt.show()
 
 
 def visualize_activity(nwb_obj):
