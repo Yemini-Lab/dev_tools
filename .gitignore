@@ -16,3 +16,4 @@ rotation_debug.mat
 /.idea
 /scripts/support_library/nwb/.idea
 /scripts/.ipynb_checkpoints
+*.mp4
