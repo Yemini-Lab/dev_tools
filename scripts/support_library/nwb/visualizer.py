@@ -83,7 +83,7 @@ def visualize_video(nwb_obj):
 def visualize_activity(nwb_obj):
     import matplotlib.pyplot as plt
 
-    target_neurons = ['AWA', 'I2', 'AVA', 'AVB', 'VB2']
+    target_neurons = ['AWAL', 'I2L', 'AVAL', 'AVBL', 'AWAR', 'I2R', 'AVAR', 'AVBR', 'VB2']
     activity_module = nwb_obj.processing['CalciumActivity']['ActivityTraces']
     activity_dict = {}
     for n in range(len(activity_module.neuron)):
@@ -99,8 +99,8 @@ def visualize_activity(nwb_obj):
         ax = axs[i]
         if neuron in activity_dict:
             ax.plot(activity_dict[neuron])
-            ax.set_title(f"{neuron} Activity")
-            ax.set_xlabel("Time")
+            ax.set_title(f"{neuron}")
+            ax.set_xlabel("Frame")
             ax.set_ylabel("Fluorescence")
         else:
             ax.set_facecolor("lightgrey")
