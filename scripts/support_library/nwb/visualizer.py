@@ -91,25 +91,22 @@ def plot_activity(ax, nwb_obj):
     cmap = plt.cm.get_cmap('tab10', len(unique_stimuli))
     stimulus_colors = {label: cmap(i) for i, label in enumerate(unique_stimuli)}
 
-    # Turn off the original axis and use its SubplotSpec
+    # Turn off the original axis and get its SubplotSpec
     ax.set_axis_off()
     fig = ax.figure
     main_spec = ax.get_subplotspec()
 
-    # Create a vertical layout: 4 rows x 1 column
-    # Row 0: Legend
-    # Rows 1-3: 3x3 grid of subplots
-    main_gs = main_spec.subgridspec(4, 1, height_ratios=[0.3, 1, 1, 1])
+    # Create a 1x2 layout: left for 3x3 plots, right for legend
+    # Give more space to the plots (e.g., width_ratios=[3, 1])
+    main_gs = main_spec.subgridspec(1, 2, width_ratios=[3, 1], wspace=0.1)
 
-    # Legend axis (just one subplot spanning the single column)
-    legend_ax = fig.add_subplot(main_gs[0, 0])
-    legend_ax.axis('off')
-
-    # Now create a sub-subgridspec for the 3x3 neuron plots
-    plot_gs = main_gs[1:, 0].subgridspec(3, 3)
-
-    # Create the 3x3 subplots
+    # Left side: 3x3 grid of activity plots
+    plot_gs = main_gs[0, 0].subgridspec(3, 3, hspace=0.5, wspace=0.5)
     axs = [fig.add_subplot(plot_gs[i // 3, i % 3]) for i in range(9)]
+
+    # Right side: single cell for legend
+    legend_ax = fig.add_subplot(main_gs[0, 1])
+    legend_ax.axis('off')
 
     # Shade and plot each neuron
     for idx, neuron in enumerate(target_neurons):
@@ -121,7 +118,7 @@ def plot_activity(ax, nwb_obj):
                 end = stimulus_timestamps[i + 1]
             else:
                 end = num_frames
-            subax.axvspan(start, end, facecolor=stimulus_colors[stimulus_labels[i]], alpha=0.1)
+            subax.axvspan(start, end, facecolor=stimulus_colors[stimulus_labels[i]], alpha=0.3)
 
         if neuron in activity_dict:
             fluo = activity_dict[neuron]
@@ -157,14 +154,15 @@ def plot_activity(ax, nwb_obj):
 
         subax.tick_params(axis='both', which='major', labelsize=6)
 
-    # Turn off axes for unused subplots
+    # Turn off axes for unused subplots if there are fewer than 9 target_neurons
     for j in range(len(target_neurons), 9):
         axs[j].axis('off')
 
-    # Create a legend for the stimuli in the legend_ax
+    # Create a legend for the stimuli in the legend_ax, single column
     legend_handles = [mpatches.Patch(color=stimulus_colors[label], label=str(label)) for label in unique_stimuli]
-    legend_ax.legend(handles=legend_handles, loc='center', ncol=len(unique_stimuli), fontsize=8)
+    legend_ax.legend(handles=legend_handles, loc='center', ncol=1, fontsize=8)
 
+    # Adjust layout
     fig.tight_layout()
 
 
