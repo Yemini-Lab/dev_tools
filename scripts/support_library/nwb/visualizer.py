@@ -31,8 +31,11 @@ def visualize_neurons(nwb_obj):
 
     # Determine left label column x position
     label_x = x_coords.min() - 100
+
     # Evenly space labels vertically
-    label_ys = np.linspace(target_positions[0, 1], target_positions[-1, 1], len(target_positions))
+    diff = target_positions[-1, 1] - target_positions[0, 1]
+    expanded_diff = diff * 2  # Increase spacing by factor of 2
+    label_ys = np.linspace(target_positions[0, 1], target_positions[0, 1] + expanded_diff, len(target_positions))
 
     # Draw labels and connecting lines
     for i in range(len(target_positions)):
