@@ -4,6 +4,7 @@ import matplotlib.animation as animation
 from matplotlib.patches import ConnectionPatch
 from datetime import datetime
 
+
 def plot_subject_info(ax, nwb_obj):
     ax.axis('off')
     subject_info = []
@@ -16,7 +17,7 @@ def plot_subject_info(ax, nwb_obj):
         info_text = "\n".join(subject_info)
     else:
         info_text = "No subject info available"
-    ax.text(0.5, 0.5, info_text, ha='center', va='center', fontsize=10)
+    ax.text(0, 0.5, info_text, ha='left', va='center', fontsize=10)
 
 
 def plot_worm(ax, nwb_obj):
@@ -80,12 +81,13 @@ def plot_activity(ax, nwb_obj):
 
     ax.set_axis_off()
     gs = ax.get_subplotspec().subgridspec(3, 3)
-    axs = [ax.figure.add_subplot(gs[i//3, i%3]) for i in range(9)]
+    axs = [ax.figure.add_subplot(gs[i // 3, i % 3]) for i in range(9)]
     for idx, neuron in enumerate(target_neurons):
         subax = axs[idx]
         if neuron in activity_dict:
-            subax.plot(activity_dict[neuron])
-            subax.set_ylim(ymin, ymax)
+            fluo = activity_dict[neuron]
+            subax.plot(fluo, linewidth=0.5, c='r')
+            subax.set_ylim(ymin, np.max([x for x in fluo if not np.isnan(x)]) + 5)
         else:
             subax.set_facecolor("lightgrey")
             subax.text(0.5, 0.5, "No activity found",
@@ -118,7 +120,7 @@ def generate_mip(nwb_obj):
     channel_gammas = nwb_obj.processing['NeuroPAL']['NeuroPAL_ID'].gammas[:]
     if color_stack.ndim < 4:
         print("Data format not as expected.")
-        return np.zeros((100,100,3))
+        return np.zeros((100, 100, 3))
     max_img = color_stack.max(axis=1)
     rgb_img = np.zeros((max_img.shape[2], max_img.shape[1], 3), dtype=float)
     for i, chan_idx in enumerate(rgbw_indices[:3]):
@@ -133,27 +135,27 @@ def generate_mip(nwb_obj):
 
 
 def visualize(nwb_obj):
-    fig = plt.figure(figsize=(10,10))
-    gs = fig.add_gridspec(3, 2, height_ratios=[0.5, 3, 3], width_ratios=[3,3])
+    fig = plt.figure(figsize=(10, 10))
+    gs = fig.add_gridspec(3, 2, height_ratios=[0.5, 3, 3], width_ratios=[3, 3])
 
     # Subject info top row (spans both columns)
     ax_info = fig.add_subplot(gs[0, :])
     plot_subject_info(ax_info, nwb_obj)
 
     # Worm (color stack) top-left
-    ax_worm = fig.add_subplot(gs[1,0])
+    ax_worm = fig.add_subplot(gs[1, 0])
     plot_worm(ax_worm, nwb_obj)
 
     # Neurons top-right
-    ax_neurons = fig.add_subplot(gs[1,1])
+    ax_neurons = fig.add_subplot(gs[1, 1])
     plot_neurons(ax_neurons, nwb_obj)
 
     # Video bottom-left
-    ax_video = fig.add_subplot(gs[2,0])
+    ax_video = fig.add_subplot(gs[2, 0])
     ax_video.set_title("Calcium Imaging Series (t=1 to t=75)", fontsize=10)
 
     # Activity bottom-right
-    ax_activity = fig.add_subplot(gs[2,1])
+    ax_activity = fig.add_subplot(gs[2, 1])
     plot_activity(ax_activity, nwb_obj)
 
     # Setup the video animation
