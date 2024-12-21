@@ -56,10 +56,10 @@ def plot_neurons(ax, nwb_obj):
 
     rgb_img = generate_mip(nwb_obj)
     ax.imshow((rgb_img * 255).astype(np.uint16), origin='lower')
-    ax.scatter(x_coords, y_coords, facecolors='none', edgecolors='w', s=20, alpha=0.6)
+    ax.scatter(x_coords, y_coords, facecolors='none', edgecolors='r', s=20, alpha=0.6)
 
     if len(target_positions) > 0:
-        label_ys = np.linspace(0.95, 0.5, len(target_positions))
+        label_ys = np.linspace(0.25, 0.75, len(target_positions))
 
         for i in range(len(target_positions)):
             tx, ty = target_positions[i]
@@ -68,9 +68,9 @@ def plot_neurons(ax, nwb_obj):
 
             ax.text(0.05, ly, lbl, color='white', fontsize=8, ha='left', va='center', transform=ax.transAxes)
 
-            con = ConnectionPatch(xyA=(0.05, ly), xyB=(tx, ty),
+            con = ConnectionPatch(xyA=(0.15, ly), xyB=(tx, ty),
                                   coordsA='axes fraction', coordsB='data',
-                                  arrowstyle='-', color='yellow', linewidth=0.4, alpha=1)
+                                  arrowstyle='-', color='red', linewidth=0.5, alpha=1)
             ax.add_artist(con)
 
     missing_neurons = [t for t in target_neurons if t not in neuron_labels]
