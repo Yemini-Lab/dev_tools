@@ -59,19 +59,17 @@ def plot_neurons(ax, nwb_obj):
     ax.scatter(x_coords, y_coords, facecolors='none', edgecolors='w', s=20, alpha=0.6)
 
     if len(target_positions) > 0:
-        min_y, max_y = target_positions[:, 1].min(), target_positions[:, 1].max()
-        label_ys = np.linspace(max_y + 10, min_y - 10, len(target_positions))
+        label_ys = np.linspace(0.95, 0.5, len(target_positions))
 
         for i in range(len(target_positions)):
             tx, ty = target_positions[i]
             lbl = target_labels[i]
             ly = label_ys[i]
 
-            label_x_offset = 10
-            ax.text(tx + label_x_offset, ly, lbl, color='white', fontsize=8, ha='left', va='center')
+            ax.text(0.05, ly, lbl, color='white', fontsize=8, ha='left', va='center', transform=ax.transAxes)
 
-            con = ConnectionPatch(xyA=(tx + label_x_offset, ly), xyB=(tx, ty),
-                                  coordsA='data', coordsB='data',
+            con = ConnectionPatch(xyA=(0.05, ly), xyB=(tx, ty),
+                                  coordsA='axes fraction', coordsB='data',
                                   arrowstyle='-', color='yellow', linewidth=0.4, alpha=1)
             ax.add_artist(con)
 
