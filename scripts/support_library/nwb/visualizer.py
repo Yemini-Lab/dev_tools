@@ -62,12 +62,12 @@ def plot_neurons(ax, nwb_obj):
         label_x = x_coords.min() - 100
         diff = target_positions[-1, 1] - target_positions[0, 1]
         expanded_diff = diff * 2.5
-        label_ys = np.linspace(target_positions[0, 1], target_positions[0, 1] + expanded_diff, len(target_positions))
-        vertical_offset = -135
+        label_ys = np.linspace(0.95, 0.5, len(target_positions))
+
         for i in range(len(target_positions)):
             tx, ty = target_positions[i]
             lbl = target_labels[i]
-            ly = label_ys[i] + vertical_offset
+            ly = label_ys[i]
             ax.text(label_x, ly, lbl, color='white', fontsize=8, ha='left', va='center')
             con = ConnectionPatch(xyA=(label_x+16*len(lbl), ly), xyB=(tx, ty),
                                   coordsA='data', coordsB='data',
