@@ -48,27 +48,45 @@ def plot_neurons(ax, nwb_obj):
     mask = np.isin(neuron_labels, target_neurons)
     target_positions = neuron_positions[mask, :2]
     target_labels = neuron_labels[mask]
+
+    missing_neurons = [t for t in target_neurons if t not in neuron_labels]
+
+    # Draw base image and scatter
+    ax.imshow((rgb_img * 255).astype(np.uint16), origin='lower')
+    ax.scatter(x_coords, y_coords, facecolors='none', edgecolors='w', s=20, alpha=0.6)
+
+    # If we have target neurons, place labels top-left
     if len(target_positions) > 0:
         sorted_indices = np.argsort(target_positions[:, 1])
         target_positions = target_positions[sorted_indices]
         target_labels = target_labels[sorted_indices]
-    ax.imshow((rgb_img * 255).astype(np.uint16), origin='lower')
-    ax.scatter(x_coords, y_coords, facecolors='none', edgecolors='w', s=20, alpha=0.6)
-    if len(target_positions) > 0:
-        label_x = x_coords.min() - 100
-        diff = target_positions[-1, 1] - target_positions[0, 1]
-        expanded_diff = diff * 2.5
-        label_ys = np.linspace(target_positions[0, 1], target_positions[0, 1] + expanded_diff, len(target_positions))
-        vertical_offset = -135
-        for i in range(len(target_positions)):
-            tx, ty = target_positions[i]
+
+        # Position labels top-left in axes coords
+        x_label_fraction = 0.05
+        start_y_label_fraction = 0.9
+        y_step = 0.05
+
+        for i, (tx, ty) in enumerate(target_positions):
             lbl = target_labels[i]
-            ly = label_ys[i] + vertical_offset
-            ax.text(label_x, ly, lbl, color='white', fontsize=8, ha='right', va='center')
-            con = ConnectionPatch(xyA=(label_x, ly), xyB=(tx, ty),
-                                  coordsA='data', coordsB='data',
-                                  arrowstyle='-', color='yellow', linewidth=0.4, alpha=1)
+            label_fraction_y = start_y_label_fraction - i * y_step
+            ax.text(x_label_fraction, label_fraction_y, lbl,
+                    color='white', fontsize=8, ha='left', va='center',
+                    transform=ax.transAxes)
+
+            # Connect label to neuron position
+            con = ConnectionPatch(
+                xyA=(x_label_fraction, label_fraction_y), xyB=(tx, ty),
+                coordsA='axes fraction', coordsB='data',
+                arrowstyle='-', color='yellow', linewidth=0.4
+            )
             ax.add_artist(con)
+
+    # If missing neurons exist, place them bottom-left
+    if len(missing_neurons) > 0:
+        ax.text(0.05, 0.05, "MISSING: " + ", ".join(missing_neurons),
+                color='red', fontsize=8, ha='left', va='bottom',
+                transform=ax.transAxes)
+
     ax.set_title(f"{nwb_obj.subject.subject_id} Neurons ({len(neuron_labels)})", fontsize=10)
     ax.axis('off')
 
