@@ -40,53 +40,72 @@ def plot_worm(ax, nwb_obj):
 def plot_neurons(ax, nwb_obj):
     target_neurons = ['AWAL', 'I2L', 'AVAL', 'AVBL', 'AWAR', 'I2R', 'AVAR', 'AVBR', 'VB2']
     neurons = nwb_obj.processing['NeuroPAL']['NeuroPALSegmentation']['NeuroPALNeurons']
+
+    # Extract neuron positions and labels
     neuron_positions = np.array(neurons.voxel_mask[:].tolist())
     neuron_labels = np.array(neurons.ID_labels)
+
+    # Generate the RGB image for background
     rgb_img = generate_mip(nwb_obj)
+
+    # Separate x and y coordinates
     x_coords = neuron_positions[:, 0]
     y_coords = neuron_positions[:, 1]
+
+    # Identify target neurons
     mask = np.isin(neuron_labels, target_neurons)
     target_positions = neuron_positions[mask, :2]
     target_labels = neuron_labels[mask]
 
+    # Determine missing neurons
     missing_neurons = [t for t in target_neurons if t not in neuron_labels]
 
-    # Draw base image and scatter
+    # Plot the background image and all neurons
     ax.imshow((rgb_img * 255).astype(np.uint16), origin='lower')
     ax.scatter(x_coords, y_coords, facecolors='none', edgecolors='w', s=20, alpha=0.6)
 
-    # If we have target neurons, place labels top-left
     if len(target_positions) > 0:
-        sorted_indices = np.argsort(target_positions[:, 1])
+        # Sort target neurons by y-coordinate (descending: top to bottom)
+        sorted_indices = np.argsort(target_positions[:, 1])[::-1]
         target_positions = target_positions[sorted_indices]
         target_labels = target_labels[sorted_indices]
 
-        # Position labels top-left in axes coords
-        x_label_fraction = 0.05
-        start_y_label_fraction = 0.9
-        y_step = 0.05
+        # Define label positions in axes coordinates (left side)
+        x_label_fraction = 0.05  # 5% from the left
+        y_label_start = 0.95  # Start near the top
+        y_label_end = 0.05  # End near the bottom
+        y_labels = np.linspace(y_label_start, y_label_end, len(target_positions))
 
         for i, (tx, ty) in enumerate(target_positions):
             lbl = target_labels[i]
-            label_fraction_y = start_y_label_fraction - i * y_step
-            ax.text(x_label_fraction, label_fraction_y, lbl,
-                    color='white', fontsize=8, ha='left', va='center',
-                    transform=ax.transAxes)
+            ly = y_labels[i]
 
-            # Connect label to neuron position
+            # Place the label text aligned to the right to prevent overlap with connections
+            ax.text(x_label_fraction, ly, lbl, color='white', fontsize=8,
+                    ha='right', va='center', transform=ax.transAxes)
+
+            # Create a connection from the right edge of the label to the neuron position
             con = ConnectionPatch(
-                xyA=(x_label_fraction, label_fraction_y), xyB=(tx, ty),
-                coordsA='axes fraction', coordsB='data',
-                arrowstyle='-', color='yellow', linewidth=0.4
+                xyA=(x_label_fraction, ly),  # Label position in axes coords
+                xyB=(tx, ty),  # Neuron position in data coords
+                coordsA='axes fraction',
+                coordsB='data',
+                arrowstyle='-',
+                color='yellow',
+                linewidth=0.4,
+                mutation_scale=10,
+                zorder=1
             )
             ax.add_artist(con)
 
-    # If missing neurons exist, place them bottom-left
     if len(missing_neurons) > 0:
-        ax.text(0.05, 0.05, "MISSING: " + ", ".join(missing_neurons),
-                color='red', fontsize=8, ha='left', va='bottom',
-                transform=ax.transAxes)
+        # Display missing neurons at the bottom-left
+        missing_text = "MISSING: " + ", ".join(missing_neurons)
+        ax.text(0.05, 0.05, missing_text, color='red', fontsize=8,
+                ha='left', va='bottom', transform=ax.transAxes,
+                bbox=dict(facecolor='black', alpha=0.5, edgecolor='none', pad=1))
 
+    # Set the title and remove axes for a cleaner look
     ax.set_title(f"{nwb_obj.subject.subject_id} Neurons ({len(neuron_labels)})", fontsize=10)
     ax.axis('off')
 
