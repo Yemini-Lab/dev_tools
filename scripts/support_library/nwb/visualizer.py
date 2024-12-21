@@ -74,6 +74,14 @@ def plot_neurons(ax, nwb_obj):
                                   arrowstyle='-', color='yellow', linewidth=0.4, alpha=1)
             ax.add_artist(con)
 
+    missing_neurons = [t for t in target_neurons if t not in neuron_labels]
+
+    if len(missing_neurons) > 0:
+        missing_text = "MISSING: " + ", ".join(missing_neurons)
+        ax.text(0.1, 0.1, missing_text, color='red', fontsize=8,
+                ha='left', va='bottom', transform=ax.transAxes,
+                bbox=dict(facecolor='black', alpha=0.5, edgecolor='none', pad=1))
+
     ax.set_title(f"{nwb_obj.subject.subject_id} Neurons ({len(neuron_labels)})", fontsize=10)
     ax.axis('off')
 
