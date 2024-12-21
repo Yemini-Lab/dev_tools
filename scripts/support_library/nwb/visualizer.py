@@ -33,7 +33,7 @@ def plot_worm(ax, nwb_obj):
     rgb_img = generate_mip(nwb_obj)
     warnings.filterwarnings("ignore")
     ax.imshow((rgb_img * 255).astype(np.uint16), origin='lower')
-    ax.set_title(f"{nwb_obj.subject.subject_id} Colorstack", fontsize=10)
+    ax.set_title(f"{nwb_obj.subject.subject_id} Colorstack MIP", fontsize=10)
     ax.axis('off')
 
 
@@ -42,18 +42,22 @@ def plot_neurons(ax, nwb_obj):
     neurons = nwb_obj.processing['NeuroPAL']['NeuroPALSegmentation']['NeuroPALNeurons']
     neuron_positions = np.array(neurons.voxel_mask[:].tolist())
     neuron_labels = np.array(neurons.ID_labels)
-    rgb_img = generate_mip(nwb_obj)
+
     x_coords = neuron_positions[:, 0]
     y_coords = neuron_positions[:, 1]
+
     mask = np.isin(neuron_labels, target_neurons)
     target_positions = neuron_positions[mask, :2]
     target_labels = neuron_labels[mask]
     if len(target_positions) > 0:
-        sorted_indices = np.argsort(target_positions[:, 2])
+        sorted_indices = np.argsort(target_positions[:, 1])
         target_positions = target_positions[sorted_indices]
         target_labels = target_labels[sorted_indices]
+
+    rgb_img = generate_mip(nwb_obj)
     ax.imshow((rgb_img * 255).astype(np.uint16), origin='lower')
     ax.scatter(x_coords, y_coords, facecolors='none', edgecolors='w', s=20, alpha=0.6)
+
     if len(target_positions) > 0:
         label_x = x_coords.min() - 100
         diff = target_positions[-1, 1] - target_positions[0, 1]
@@ -65,10 +69,11 @@ def plot_neurons(ax, nwb_obj):
             lbl = target_labels[i]
             ly = label_ys[i] + vertical_offset
             ax.text(label_x, ly, lbl, color='white', fontsize=8, ha='left', va='center')
-            con = ConnectionPatch(xyA=(label_x, ly), xyB=(tx, ty),
+            con = ConnectionPatch(xyA=(label_x+16*len(lbl), ly), xyB=(tx, ty),
                                   coordsA='data', coordsB='data',
                                   arrowstyle='-', color='yellow', linewidth=0.4, alpha=1)
             ax.add_artist(con)
+
     ax.set_title(f"{nwb_obj.subject.subject_id} Neurons ({len(neuron_labels)})", fontsize=10)
     ax.axis('off')
 
